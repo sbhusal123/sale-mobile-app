@@ -1,98 +1,137 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Link, Redirect } from 'expo-router';
+import { StyleSheet, View, Dimensions } from 'react-native';
+import { Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { useAuth } from '@/app/context/auth-context';
 
 export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+  const { user, orders } = useAuth();
+  const theme = useTheme();
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+  if (!user) {
+    return <Redirect href="/login" />;
+  }
+
+  const totalOrders = orders.length;
+  const totalSales = orders.reduce((acc, o) => acc + o.totalPrice, 0);
+
+  const navItems = [
+    { title: 'उत्पादनहरू', description: 'स्टक प्रबन्ध गर्नुहोस्।', href: '/products', icon: 'package-variant-closed' },
+    { title: 'वर्गहरू', description: 'वर्ग विवरण हेर्नुहोस्।', href: '/categories', icon: 'view-grid' },
+    { title: 'अर्डरहरू', description: 'अर्डर इतिहास हेर्नुहोस्।', href: '/orders', icon: 'cart' },
+    { title: 'खाता', description: 'प्रोफाइल र लग आउट गर्नुहोस्।', href: '/account', icon: 'account-circle' },
+  ];
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.header}>
+        <Text variant="headlineSmall" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
+          स्वागत छ {user?.name ?? 'बिक्रेता'}
+        </Text>
+      </View>
+
+      {/* DISTINCT UI FOR STATS */}
+      <View style={styles.statsContainer}>
+        <Surface elevation={4} style={[styles.statCard, { backgroundColor: theme.colors.primary }]}>
+          <MaterialCommunityIcons name="shopping-outline" size={40} color="#1b263b" style={styles.statIcon} />
+          <Text style={styles.statTitle}>आजको कुल अर्डरहरू</Text>
+          <Text style={styles.statValue}>{totalOrders}</Text>
+        </Surface>
+
+        <Surface elevation={4} style={[styles.statCard, { backgroundColor: '#4ade80' }]}>
+          <MaterialCommunityIcons name="cash-multiple" size={40} color="#1b263b" style={styles.statIcon} />
+          <Text style={[styles.statTitle, { color: '#0f172a' }]}>आजको कुल बिक्री मूल्य</Text>
+          <Text style={[styles.statValue, { color: '#0f172a' }]}>₹ {totalSales.toLocaleString()}</Text>
+        </Surface>
+      </View>
+
+      <Text variant="titleMedium" style={{ color: theme.colors.onSurface, opacity: 0.8, marginTop: 24, marginBottom: 12 }}>
+        द्रुत मेनु
+      </Text>
+
+      <View style={styles.grid}>
+        {navItems.map((item) => (
+          <Link href={item.href as any} asChild key={item.href}>
+            <TouchableRipple
+              style={[styles.cardRipple, { backgroundColor: theme.colors.surface }]}
+              rippleColor="rgba(255, 255, 255, 0.15)"
+            >
+              <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface }]}>
+                <MaterialCommunityIcons name={item.icon as any} size={32} color={theme.colors.primary} style={styles.cardIcon} />
+                <Text variant="titleMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
+                  {item.title}
+                </Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 6, opacity: 0.8 }}>
+                  {item.description}
+                </Text>
+              </Surface>
+            </TouchableRipple>
+          </Link>
+        ))}
+      </View>
+    </View>
   );
 }
 
+const { width } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  stepContainer: {
-    gap: 8,
+  header: {
+    marginBottom: 20,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  statCard: {
+    flex: 1,
+    padding: 20,
+    borderRadius: 24,
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  statIcon: {
+    position: 'absolute',
+    right: -10,
+    top: -10,
+    opacity: 0.2,
+  },
+  statTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0f172a',
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  statValue: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#0f172a',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  cardRipple: {
+    width: '47%',
+    borderRadius: 16,
+  },
+  cardSurface: {
+    padding: 16,
+    borderRadius: 16,
+    minHeight: 130,
+    justifyContent: 'center',
+  },
+  cardIcon: {
+    marginBottom: 12,
   },
 });

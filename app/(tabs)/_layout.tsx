@@ -1,35 +1,66 @@
-import { Tabs } from 'expo-router';
+import { Drawer } from 'expo-router/drawer';
 import React from 'react';
+import { useTheme } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function DrawerLayout() {
+  const theme = useTheme();
 
   return (
-    <Tabs
+    <Drawer
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
+        drawerActiveTintColor: theme.colors.primary,
+        drawerInactiveTintColor: theme.colors.onSurface,
+        drawerStyle: {
+          backgroundColor: theme.colors.background,
+        },
+        headerStyle: {
+          backgroundColor: theme.colors.background,
+          elevation: 0,
+          shadowOpacity: 0,
+        },
+        headerTintColor: theme.colors.onBackground,
       }}>
-      <Tabs.Screen
+      <Drawer.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          drawerLabel: 'गृह',
+          title: 'ड्यासबोर्ड',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons size={28} name="home" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="explore"
+      <Drawer.Screen
+        name="products"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          drawerLabel: 'उत्पादनहरू',
+          title: 'उत्पादनहरू',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons size={28} name="package-variant-closed" color={color} />,
         }}
       />
-    </Tabs>
+      <Drawer.Screen
+        name="categories"
+        options={{
+          drawerLabel: 'वर्गहरू',
+          title: 'वर्गहरू',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons size={28} name="view-grid" color={color} />,
+        }}
+      />
+      <Drawer.Screen
+        name="orders"
+        options={{
+          drawerLabel: 'अर्डरहरू',
+          title: 'अर्डरहरू',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons size={28} name="cart" color={color} />,
+        }}
+      />
+      <Drawer.Screen
+        name="account"
+        options={{
+          drawerLabel: 'खाता',
+          title: 'खाता',
+          drawerIcon: ({ color }) => <MaterialCommunityIcons size={28} name="account-circle" color={color} />,
+        }}
+      />
+    </Drawer>
   );
 }

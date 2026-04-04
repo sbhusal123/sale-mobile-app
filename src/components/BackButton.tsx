@@ -1,8 +1,10 @@
-import React from 'react';
-import { TouchableOpacity, StyleSheet, Text, View } from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const Icon = MaterialCommunityIcons as any;
 
 interface BackButtonProps {
   onPress?: () => void;
@@ -10,7 +12,7 @@ interface BackButtonProps {
   color?: string;
 }
 
-export default function BackButton({ onPress, label = 'पछाडि (Back)', color }: BackButtonProps) {
+export default function BackButton({ onPress, label = 'पछाडि', color }: BackButtonProps) {
   const navigation = useNavigation();
   const theme = useTheme();
 
@@ -23,15 +25,15 @@ export default function BackButton({ onPress, label = 'पछाडि (Back)', 
   };
 
   return (
-    <TouchableOpacity 
-      onPress={handlePress} 
+    <TouchableOpacity
+      onPress={handlePress}
       style={styles.container}
       activeOpacity={0.7}
     >
-      <MaterialCommunityIcons 
-        name="chevron-left" 
-        size={30} 
-        color={color || theme.colors.primary} 
+      <Icon
+        name="chevron-left"
+        size={30}
+        color={color || theme.colors.primary}
       />
       <Text style={[styles.label, { color: color || theme.colors.primary }]}>
         {label}

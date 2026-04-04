@@ -3,8 +3,12 @@ import { StyleSheet, View, Animated, ActivityIndicator } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useAuth } from '../../context/auth-context';
+
+const Icon = MaterialCommunityIcons as any;
 
 export default function SplashScreen() {
+  const { user } = useAuth();
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const fadeAnim = new Animated.Value(0);
@@ -18,7 +22,11 @@ export default function SplashScreen() {
 
     // Transition to main flow after 2.5 seconds
     const timer = setTimeout(() => {
-      navigation.replace('MainFlow');
+      if (user) {
+        navigation.replace('Main');
+      } else {
+        navigation.replace('Login');
+      }
     }, 2500);
 
     return () => clearTimeout(timer);
@@ -28,7 +36,7 @@ export default function SplashScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
         <View style={styles.iconCircle}>
-          <MaterialCommunityIcons name="robot" size={80} color={theme.colors.primary} />
+          <Icon name="robot" size={80} color={theme.colors.primary} />
         </View>
         
         <Text variant="displayMedium" style={[styles.appName, { color: theme.colors.primary }]}>

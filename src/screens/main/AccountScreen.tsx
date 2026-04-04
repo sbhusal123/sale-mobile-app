@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Surface, Text, TextInput, Button, useTheme, Divider, ActivityIndicator } from 'react-native-paper';
+import { Surface, Text, TextInput, Button, useTheme, Divider, ActivityIndicator, IconButton } from 'react-native-paper';
 import { useAuth, Config } from '../../context/auth-context';
 import { useNavigation } from '@react-navigation/native';
-import BackButton from '../../components/BackButton';
+import AppHeader from '../../components/AppHeader';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+
+const Icon = MaterialCommunityIcons as any;
 
 export default function AccountScreen() {
   const { user, config, fetchConfig, updateConfig, logout } = useAuth();
@@ -13,7 +16,7 @@ export default function AccountScreen() {
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [formData, setFormData] = useState<Partial<Config>>({});
+  const [formData, setFormData] = useState<Partial<Config>>(config || {});
 
   useEffect(() => {
     const init = async () => {
@@ -54,10 +57,10 @@ export default function AccountScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.headerRow}>
-        <BackButton onPress={() => navigation.navigate('Home')} />
-        <Text variant="headlineSmall" style={styles.headerTitle}>खाता र सेटिङहरू</Text>
-      </View>
+      <AppHeader 
+        title="खाता र सेटिङहरू" 
+        onMenu={() => navigation.openDrawer()} 
+      />
 
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -66,28 +69,32 @@ export default function AccountScreen() {
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Profile Summary */}
-          <Surface elevation={1} style={[styles.sectionCard, { backgroundColor: theme.colors.surface }]}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>प्रयोगकर्ता विवरण</Text>
+          <Surface elevation={1} style={[styles.profileCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
+            <View style={[styles.avatarBox, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <Icon name="account" size={40} color={theme.colors.primary} />
+            </View>
             <View style={styles.profileInfo}>
-              <Text variant="bodyLarge" style={{ fontWeight: 'bold' }}>{user?.name}</Text>
-              <Text variant="bodyMedium" style={{ opacity: 0.7 }}>{user?.email}</Text>
+              <Text variant="titleLarge" style={[styles.userName, { color: theme.colors.onSurface }]}>{user?.name}</Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{user?.email}</Text>
             </View>
           </Surface>
 
+          <Divider style={{ marginVertical: 8, backgroundColor: 'transparent' }} />
+
           {/* Application Settings */}
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionHeader}>एप सेटिङहरू (Application)</Text>
-            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
+            <Text variant="titleMedium" style={[styles.sectionHeader, { color: theme.colors.onSurface }]}>एप सेटिङहरू</Text>
+            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
               <TextInput
-                label="गुगल API कुञ्जी (Google API KEY)"
-                value={formData.google_api_key}
+                label="गूगल API कुञ्जी (Google API KEY)"
+                value={formData?.google_api_key || ''}
                 onChangeText={(v) => updateField('google_api_key', v)}
                 mode="outlined"
                 style={styles.input}
               />
               <TextInput
                 label="डोमेन (Domain)"
-                value={formData.domain}
+                value={formData?.domain || ''}
                 onChangeText={(v) => updateField('domain', v)}
                 mode="outlined"
                 style={styles.input}
@@ -97,11 +104,11 @@ export default function AccountScreen() {
 
           {/* Whatsapp Settings */}
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionHeader}>व्हाट्सएप सेटिङहरू (Whatsapp)</Text>
-            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
+            <Text variant="titleMedium" style={[styles.sectionHeader, { color: theme.colors.onSurface }]}>व्हाट्सएप सेटिङहरू</Text>
+            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
               <TextInput
                 label="व्हाट्सएप एक्सेस टोकन (Access Token)"
-                value={formData.whatsapp_access_token}
+                value={formData?.whatsapp_access_token || ''}
                 onChangeText={(v) => updateField('whatsapp_access_token', v)}
                 mode="outlined"
                 multiline
@@ -110,7 +117,7 @@ export default function AccountScreen() {
               />
               <TextInput
                 label="व्हाट्सएप भेरिफाई टोकन (Verify Token)"
-                value={formData.whatsapp_verify_token}
+                value={formData?.whatsapp_verify_token || ''}
                 onChangeText={(v) => updateField('whatsapp_verify_token', v)}
                 mode="outlined"
                 style={styles.input}
@@ -120,11 +127,11 @@ export default function AccountScreen() {
 
           {/* Model Settings */}
           <View style={styles.section}>
-            <Text variant="titleMedium" style={styles.sectionHeader}>मोडेल सेटिङहरू (AI Model)</Text>
-            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface }]}>
+            <Text variant="titleMedium" style={[styles.sectionHeader, { color: theme.colors.onSurface }]}>मोडेल सेटिङहरू</Text>
+            <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
               <TextInput
                 label="प्रणाली प्रम्प्ट (System Prompt)"
-                value={formData.system_prompt}
+                value={formData?.system_prompt || ''}
                 onChangeText={(v) => updateField('system_prompt', v)}
                 mode="outlined"
                 multiline
@@ -133,7 +140,7 @@ export default function AccountScreen() {
               />
               <TextInput
                 label="मोडेलको नाम (Model Name)"
-                value={formData.model_name}
+                value={formData?.model_name || ''}
                 onChangeText={(v) => updateField('model_name', v)}
                 mode="outlined"
                 placeholder="e.g. gpt-4, gemini-pro"
@@ -148,6 +155,8 @@ export default function AccountScreen() {
             style={styles.saveBtn}
             loading={saving}
             disabled={saving}
+            buttonColor={theme.colors.primary}
+            textColor="#fff"
           >
             सेटिङहरू सुरक्षित गर्नुहोस्
           </Button>
@@ -159,8 +168,9 @@ export default function AccountScreen() {
             onPress={() => logout()} 
             textColor={theme.colors.error}
             style={[styles.logoutBtn, { borderColor: theme.colors.error }]}
+            icon="logout"
           >
-            बाहिर निस्कनुहोस् (Logout)
+            लग आउट गर्नुहोस्
           </Button>
           
           <View style={{ height: 40 }} />
@@ -181,28 +191,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 60,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  headerTitle: {
-    marginLeft: 8,
-    fontWeight: 'bold',
-  },
   scrollContent: {
     paddingHorizontal: 16,
+    paddingTop: 16,
   },
-  sectionCard: {
-    padding: 16,
-    borderRadius: 12,
+  profileCard: {
+    padding: 20,
+    borderRadius: 24,
     marginBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    borderWidth: 1,
   },
-  sectionTitle: {
-    marginBottom: 8,
-    opacity: 0.6,
+  avatarBox: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  userName: {
+    fontWeight: '900',
   },
   profileInfo: {
     gap: 4,
@@ -213,27 +223,30 @@ const styles = StyleSheet.create({
   sectionHeader: {
     marginBottom: 12,
     marginLeft: 4,
-    fontWeight: 'bold',
-    opacity: 0.8,
+    fontWeight: '900',
   },
   formCard: {
-    padding: 16,
-    borderRadius: 16,
+    padding: 20,
+    borderRadius: 24,
     gap: 16,
+    borderWidth: 1,
   },
   input: {
     backgroundColor: 'transparent',
   },
   saveBtn: {
     marginTop: 8,
-    paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 16,
+    paddingVertical: 4,
+    elevation: 4,
   },
   divider: {
-    marginVertical: 24,
+    marginVertical: 32,
+    opacity: 0.5,
   },
   logoutBtn: {
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 1.5,
+    paddingVertical: 4,
   },
 });

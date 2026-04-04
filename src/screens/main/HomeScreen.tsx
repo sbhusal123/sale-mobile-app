@@ -1,10 +1,12 @@
-import React from 'react';
-import { StyleSheet, View, Dimensions, ScrollView, RefreshControl } from 'react-native';
-import { Surface, Text, TouchableRipple, useTheme, IconButton } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import React from 'react';
+import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/auth-context';
-import BackButton from '../../components/BackButton';
+
+const Icon = MaterialCommunityIcons as any;
 
 export default function HomeScreen() {
   const { user, logout, orders, fetchCategories, fetchProducts, fetchOrders, fetchConfig } = useAuth();
@@ -30,8 +32,8 @@ export default function HomeScreen() {
     }
   }, []);
 
-  const totalOrders = orders.length;
-  const totalSales = orders.reduce((acc, o) => acc + parseFloat(o.total_price), 0);
+  const totalOrders = orders?.length || 0;
+  const totalSales = orders?.reduce((acc: number, o: any) => acc + parseFloat(o.total_price || 0), 0) || 0;
 
   const navItems = [
     { title: 'उत्पादनहरू', description: 'स्टक प्रबन्ध गर्नुहोस्।', screen: 'Products', icon: 'package-variant-closed' },
@@ -42,44 +44,58 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <BackButton label="लगआउट (Logout)" onPress={() => logout()} />
-      
-      <ScrollView 
+      <AppHeader
+        title="ड्यासबोर्ड"
+        onMenu={() => navigation.openDrawer()}
+      />
+
+      <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
         }
       >
-        <View style={styles.header}>
+        <View style={styles.welcomeSection}>
           <View>
-            <Text variant="headlineSmall" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
-               स्वागत छ {user?.name ?? 'बिक्रेता'}
+            <Text variant="headlineSmall" style={[styles.welcomeText, { color: theme.colors.onSurface }]}>
+              नमस्ते, {user?.name || 'User'}!
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              आजको प्रगति हेर्नुहोस्।
             </Text>
           </View>
-          <IconButton 
-            icon="bell" 
-            size={24} 
-            iconColor={theme.colors.primary} 
-            onPress={() => navigation.navigate('Notifications')} 
-          />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Notifications')}
+            style={[styles.bellBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+          >
+            <Icon name="bell-outline" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.statsContainer}>
-          <Surface elevation={4} style={[styles.statCard, { backgroundColor: theme.colors.primary }]}>
-            <MaterialCommunityIcons name="shopping-outline" size={40} color="#1b263b" style={styles.statIcon} />
-            <Text style={styles.statTitle}>आजको कुल अर्डरहरू</Text>
-            <Text style={styles.statValue}>{totalOrders}</Text>
+          <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, borderLeftWidth: 4, borderLeftColor: theme.colors.primary }]}>
+            <View style={[styles.statIconBox, { backgroundColor: theme.colors.primary + '1A' }]}>
+              <Icon name="shopping" size={24} color={theme.colors.primary} />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>आजको अर्डर</Text>
+              <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>{totalOrders}</Text>
+            </View>
           </Surface>
 
-          <Surface elevation={4} style={[styles.statCard, { backgroundColor: '#4ade80' }]}>
-            <MaterialCommunityIcons name="cash-multiple" size={40} color="#1b263b" style={styles.statIcon} />
-            <Text style={[styles.statTitle, { color: '#0f172a' }]}>आजको कुल बिक्री मूल्य</Text>
-            <Text style={[styles.statValue, { color: '#0f172a' }]}>₹ {totalSales.toLocaleString()}</Text>
+          <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, borderLeftWidth: 4, borderLeftColor: theme.colors.secondary }]}>
+            <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+              <Icon name="currency-inr" size={24} color={theme.colors.secondary} />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>कुल बिक्री</Text>
+              <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>₹{totalSales.toLocaleString()}</Text>
+            </View>
           </Surface>
         </View>
 
-        <Text variant="titleMedium" style={{ color: theme.colors.onSurface, opacity: 0.8, marginTop: 24, marginBottom: 12 }}>
+        <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '900', marginTop: 32, marginBottom: 16, paddingHorizontal: 16 }}>
           द्रुत मेनु
         </Text>
 
@@ -88,15 +104,17 @@ export default function HomeScreen() {
             <TouchableRipple
               key={item.screen}
               onPress={() => navigation.navigate(item.screen)}
-              style={[styles.cardRipple, { backgroundColor: theme.colors.surface }]}
-              rippleColor="rgba(255, 255, 255, 0.15)"
+              style={styles.cardRipple}
+              rippleColor={theme.colors.primary + '1A'}
             >
-              <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface }]}>
-                <MaterialCommunityIcons name={item.icon as any} size={32} color={theme.colors.primary} style={styles.cardIcon} />
-                <Text variant="titleMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
+              <Surface elevation={1} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+                <View style={[styles.iconBox, { backgroundColor: theme.colors.surfaceVariant }]}>
+                  <Icon name={item.icon as any} size={28} color={theme.colors.primary} />
+                </View>
+                <Text variant="titleMedium" style={[styles.navTitle, { color: theme.colors.onSurface }]}>
                   {item.title}
                 </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurface, marginTop: 6, opacity: 0.8 }}>
+                <Text variant="bodySmall" style={[styles.navDesc, { color: theme.colors.onSurfaceVariant }]}>
                   {item.description}
                 </Text>
               </Surface>
@@ -112,14 +130,34 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
   },
-  header: {
-    marginBottom: 20,
+  welcomeSection: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  welcomeText: {
+    fontWeight: '900',
+    fontSize: 24,
+  },
+  bellBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  infoText: {
+    color: '#94A3B8',
+    fontWeight: '600',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -127,50 +165,74 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
+    paddingHorizontal: 16,
   },
   statCard: {
     flex: 1,
-    padding: 20,
-    borderRadius: 24,
-    justifyContent: 'center',
-    position: 'relative',
-    overflow: 'hidden',
+    padding: 12,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.05)',
   },
-  statIcon: {
-    position: 'absolute',
-    right: -10,
-    top: -10,
-    opacity: 0.2,
+  statIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statInfo: {
+    flex: 1,
   },
   statTitle: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
   },
   statValue: {
-    fontSize: 28,
+    fontSize: 16,
     fontWeight: '900',
-    color: '#0f172a',
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
+    paddingHorizontal: 16,
   },
   cardRipple: {
     width: '47%',
-    borderRadius: 16,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginBottom: 12,
   },
   cardSurface: {
-    padding: 16,
-    borderRadius: 16,
-    minHeight: 130,
+    padding: 20,
+    borderRadius: 24,
+    minHeight: 160,
     justifyContent: 'center',
   },
-  cardIcon: {
-    marginBottom: 12,
+  iconBox: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  navTitle: {
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  navDesc: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '500',
   },
 });

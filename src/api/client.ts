@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { storage } from '../utils/storage';
 
-const API_BASE_URL = 'https://deeply-oriented-imp.ngrok-free.app/api/';
+export const API_BASE_URL = 'https://deeply-oriented-imp.ngrok-free.app/api/';
+export const MEDIA_BASE_URL = 'https://deeply-oriented-imp.ngrok-free.app/media';
+
 const USER_STORAGE_KEY = '@user_session';
 
 const apiClient = axios.create({

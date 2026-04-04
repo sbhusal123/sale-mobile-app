@@ -1,10 +1,14 @@
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, StyleSheet, View, RefreshControl } from 'react-native';
-import { Surface, Text, useTheme, Divider, FAB, TouchableRipple } from 'react-native-paper';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAuth } from '../../context/auth-context';
-import BackButton from '../../components/BackButton';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { Divider, FAB, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import ImageViewer from '../../components/ImageViewer';
+import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
+import { useAuth } from '../../context/auth-context';
+
+const Icon = MaterialCommunityIcons as any;
 
 export default function OrdersScreen() {
   const { orders, products, fetchOrders } = useAuth();
@@ -12,7 +16,7 @@ export default function OrdersScreen() {
   const theme = useTheme();
 
   const [refreshing, setRefreshing] = React.useState(false);
-  const [isLoading, setIsLoading] = React.useState(orders.length === 0);
+  const [isLoading, setIsLoading] = React.useState((orders || []).length === 0);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -50,10 +54,10 @@ export default function OrdersScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <BackButton onPress={() => navigation.navigate('Home')} />
-      <Text variant="headlineMedium" style={[styles.header, { color: theme.colors.onBackground }]}>
-        अर्डरहरू (Orders)
-      </Text>
+      <AppHeader 
+        title="अर्डरहरू" 
+        onMenu={() => navigation.openDrawer()} 
+      />
 
       {isLoading ? renderShimmer() : (
         <FlatList
@@ -65,26 +69,40 @@ export default function OrdersScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
           }
           renderItem={({ item }) => (
-            <TouchableRipple onPress={() => navigation.navigate('OrderDetail', { id: item.id })}>
-              <Surface elevation={2} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+            <TouchableRipple
+              onPress={() => navigation.navigate('OrderDetail', { id: item.id })}
+              style={styles.cardWrapper}
+              rippleColor={theme.colors.primary + '1A'}
+            >
+              <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
                 <View style={styles.cardHeader}>
-                  <Text variant="titleMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
-                    अर्डर #{item.id}
-                  </Text>
-                  <Text variant="titleSmall" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
-                    ₹{parseFloat(item.total_price).toFixed(2)}
+                  <View>
+                    <Text variant="titleMedium" style={[styles.orderId, { color: theme.colors.onSurface }]}>
+                      अर्डर #{item.id}
+                    </Text>
+                    <Surface elevation={0} style={[styles.statusChip, { backgroundColor: theme.colors.primary + '15' }]}>
+                      <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: 'bold' }}>
+                        {(item as any).order_status || 'Pending'}
+                      </Text>
+                    </Surface>
+                  </View>
+                  <Text variant="titleLarge" style={styles.orderPrice}>
+                    ₹{parseFloat(item.total_price).toLocaleString()}
                   </Text>
                 </View>
-                <Divider style={{ marginVertical: 8, backgroundColor: theme.colors.surfaceVariant }} />
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                  <Text style={{ fontWeight: 'bold' }}>उत्पादन:</Text> {products.find(p => p.id === item.product)?.name || 'अज्ञात'}
-                </Text>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>
-                  <Text style={{ fontWeight: 'bold' }}>मात्रा:</Text> {item.quantity}
-                </Text>
-                <Text variant="bodySmall" style={{ color: theme.colors.onSurface, opacity: 0.7, marginTop: 8 }}>
-                  स्थान: {item.location} • फोन: {item.phone}
-                </Text>
+                <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+                <View style={styles.orderDetailRow}>
+                  <Icon name="package-variant" size={18} color={theme.colors.primary} />
+                  <Text variant="bodyMedium" style={[styles.orderText, { color: theme.colors.onSurface }]}>
+                    {products.find(p => p.id === item.product)?.name || 'अज्ञात'} • {item.quantity} थान
+                  </Text>
+                </View>
+                <View style={styles.orderDetailRow}>
+                  <Icon name="map-marker-outline" size={18} color={theme.colors.onSurfaceVariant} />
+                  <Text variant="bodySmall" style={styles.locationText}>
+                    {item.location} • {item.phone}
+                  </Text>
+                </View>
               </Surface>
             </TouchableRipple>
           )}
@@ -102,10 +120,59 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 16, paddingTop: 60 },
-  header: { fontWeight: 'bold', marginBottom: 20, marginLeft: 4 },
-  list: { gap: 14, paddingBottom: 100 },
-  card: { borderRadius: 16, padding: 16 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  fab: { position: 'absolute', right: 24, bottom: 48 },
+  container: { flex: 1 },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 24
+  },
+  headerTitleContainer: {
+    marginLeft: 12,
+  },
+  headerTitle: {
+    fontWeight: '900',
+    color: '#3B82F6',
+    fontSize: 22,
+  },
+  headerSubtitle: {
+    color: '#94A3B8',
+    opacity: 0.5,
+    marginTop: -2,
+  },
+  list: { paddingHorizontal: 16, gap: 16, paddingBottom: 100 },
+  cardWrapper: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+  },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  orderId: { fontWeight: '900' },
+  orderPrice: { color: '#3B82F6', fontWeight: '900' },
+  divider: { marginVertical: 4, height: 1, opacity: 0.5 },
+  orderDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+  },
+  orderText: { fontWeight: '700' },
+  locationText: { color: '#94A3B8' },
+  fab: {
+    position: 'absolute',
+    right: 24,
+    bottom: 48,
+    borderRadius: 20,
+  },
+  statusChip: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+    alignSelf: 'flex-start',
+  },
 });

@@ -1,9 +1,11 @@
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
-import { Surface, Text, useTheme, Button, IconButton } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
-import BackButton from '../../components/BackButton';
+import { IconButton, Surface, Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import BackButton from '../../components/BackButton';
+
+const Icon = MaterialCommunityIcons as any;
 
 // This will be replaced by local storage/context data later
 const mockNotifications = [
@@ -26,12 +28,12 @@ export default function NotificationsScreen() {
         <View style={styles.headerLeft}>
           <BackButton />
           <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.colors.onBackground }]}>
-            सूचनाहरू (Notifications)
+            सूचनाहरू
           </Text>
         </View>
-        <IconButton 
-          icon="delete-sweep" 
-          iconColor={theme.colors.error} 
+        <IconButton
+          icon="delete-sweep"
+          iconColor={theme.colors.error}
           onPress={clearAll}
           disabled={notifications.length === 0}
         />
@@ -45,7 +47,7 @@ export default function NotificationsScreen() {
           renderItem={({ item }) => (
             <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.iconContainer}>
-                <MaterialCommunityIcons name="bell-ring" size={24} color={theme.colors.primary} />
+                <Icon name="bell-ring" size={24} color={theme.colors.primary} />
               </View>
               <View style={styles.content}>
                 <View style={styles.row}>
@@ -65,7 +67,7 @@ export default function NotificationsScreen() {
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <MaterialCommunityIcons name="bell-off-outline" size={80} color={theme.colors.onSurfaceVariant} style={{ opacity: 0.3 }} />
+          <Icon name="bell-off-outline" size={80} color={theme.colors.onSurfaceVariant} style={{ opacity: 0.3 }} />
           <Text variant="titleLarge" style={{ color: theme.colors.onSurfaceVariant, marginTop: 16 }}>
             कुनै नयाँ सूचना छैन
           </Text>

@@ -1,9 +1,13 @@
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
+import { View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
 import { useAuth } from '../context/auth-context';
+import { useThemeContext } from '../context/theme-context';
+
+const Icon = MaterialCommunityIcons as any;
 
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -21,13 +25,33 @@ import ProductDetailScreen from '../screens/details/ProductDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 
 const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Drawer = createDrawerNavigator();
 
-function TabNavigator() {
+import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+
+function CustomDrawerContent(props: any) {
+  const theme = useTheme();
   return (
-    <Tab.Navigator
+    <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 40 }}>
+      <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
+        <Text variant="headlineSmall" style={{ color: theme.colors.primary, fontWeight: '900' }}>बिक्री सहायक</Text>
+        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, opacity: 0.7 }}>स्मार्ट डिजिटल व्यवस्थापन</Text>
+      </View>
+      <View style={{ height: 1, backgroundColor: theme.colors.outline, opacity: 0.1, marginVertical: 16, marginHorizontal: 20 }} />
+      <DrawerItemList {...props} />
+    </DrawerContentScrollView>
+  );
+}
+
+function MainNavigator() {
+  const theme = useTheme();
+  const { isDark } = useThemeContext();
+
+  return (
+    <Drawer.Navigator
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
+        drawerIcon: ({ focused, color, size }) => {
           let iconName = '';
           if (route.name === 'Home') iconName = focused ? 'home' : 'home-outline';
           else if (route.name === 'Products') iconName = focused ? 'package-variant-closed' : 'package-variant-closed-outline';
@@ -35,35 +59,40 @@ function TabNavigator() {
           else if (route.name === 'Orders') iconName = focused ? 'cart' : 'cart-outline';
           else if (route.name === 'Account') iconName = focused ? 'account' : 'account-outline';
 
-          return <MaterialCommunityIcons name={iconName} size={size} color={color} />;
+          return <Icon name={iconName} size={24} color={color} />;
         },
-        tabBarActiveTintColor: '#10b981',
-        tabBarInactiveTintColor: 'gray',
+        drawerActiveTintColor: theme.colors.primary,
+        drawerInactiveTintColor: isDark ? '#94A3B8' : '#64748B',
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#18181b',
-          borderTopColor: '#27272a',
+        drawerStyle: {
+          backgroundColor: theme.colors.surface,
+          width: 280,
         },
+        drawerLabelStyle: {
+          marginLeft: 0,
+          fontWeight: '900',
+        }
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Products" component={ProductsScreen} />
-      <Tab.Screen name="Categories" component={CategoriesScreen} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
-    </Tab.Navigator>
+      <Drawer.Screen name="Home" component={HomeScreen} options={{ drawerLabel: 'गृहपृष्ठ' }} />
+      <Drawer.Screen name="Products" component={ProductsScreen} options={{ drawerLabel: 'उत्पादनहरू' }} />
+      <Drawer.Screen name="Categories" component={CategoriesScreen} options={{ drawerLabel: 'वर्गहरू' }} />
+      <Drawer.Screen name="Orders" component={OrdersScreen} options={{ drawerLabel: 'अर्डरहरू' }} />
+      <Drawer.Screen name="Account" component={AccountScreen} options={{ drawerLabel: 'खाता र सेटिङहरू' }} />
+    </Drawer.Navigator>
   );
 }
 
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator } from 'react-native';
 
 export function RootNavigator() {
   const { user, loading } = useAuth();
+  const theme = useTheme();
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#09090b' }}>
-        <ActivityIndicator size="large" color="#10b981" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -71,38 +100,20 @@ export function RootNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
       <Stack.Screen name="Splash" component={SplashScreen} />
-      <Stack.Screen name="MainFlow">
-        {() => (
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
-            {!user ? (
-              <>
-                <Stack.Screen name="Login" component={LoginScreen} />
-                <Stack.Screen name="Register" component={RegisterScreen} />
-              </>
-            ) : (
-              <>
-                <Stack.Screen name="Main" component={TabNavigator} />
-                <Stack.Screen
-                  name="ProductDetail"
-                  component={ProductDetailScreen}
-                />
-                <Stack.Screen
-                  name="CategoryDetail"
-                  component={CategoryDetailScreen}
-                />
-                <Stack.Screen
-                  name="OrderDetail"
-                  component={OrderDetailScreen}
-                />
-                <Stack.Screen
-                  name="Notifications"
-                  component={NotificationsScreen}
-                />
-              </>
-            )}
-          </Stack.Navigator>
-        )}
-      </Stack.Screen>
+      {!user ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Main" component={MainNavigator} />
+          <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+          <Stack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
+          <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        </>
+      )}
     </Stack.Navigator>
   );
 }

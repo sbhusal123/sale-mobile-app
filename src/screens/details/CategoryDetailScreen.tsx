@@ -5,6 +5,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../context/auth-context';
 
+const Icon = MaterialCommunityIcons as any;
 import BackButton from '../../components/BackButton';
 
 export default function CategoryDetailScreen() {
@@ -50,8 +51,8 @@ export default function CategoryDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert('मेटाउन निश्चित हुनुहुन्छ?', 'के तपाईं यो वर्ग हटाउन चाहनुहुन्छ?', [
-      { text: 'रद्द गर्नुहोस् (Cancel)', style: 'cancel' },
-      { text: 'हटाउनुहोस् (Delete)', style: 'destructive', onPress: async () => {
+      { text: 'रद्द गर्नुहोस्', style: 'cancel' },
+      { text: 'हटाउनुहोस्', style: 'destructive', onPress: async () => {
         const success = await deleteCategory(Number(id));
         if (success) navigation.goBack();
       }}
@@ -67,21 +68,21 @@ export default function CategoryDetailScreen() {
         <BackButton />
         <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerRow}>
-            <MaterialCommunityIcons name="view-grid-plus" size={32} color={theme.colors.onSurface} />
+            <Icon name="view-grid-plus" size={32} color={theme.colors.onSurface} />
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
               {isNew ? 'नयाँ वर्ग थप्नुहोस्' : 'वर्ग सम्पादन गर्नुहोस्'}
             </Text>
           </View>
           
           <TextInput
-            label="नाम (Title)"
+            label="नाम"
             value={title}
             onChangeText={setTitle}
             mode="outlined"
             style={styles.input}
           />
           <TextInput
-            label="विवरण (Description)"
+            label="विवरण"
             value={description}
             onChangeText={setDescription}
             mode="outlined"
@@ -98,7 +99,7 @@ export default function CategoryDetailScreen() {
               contentStyle={styles.btnContent}
               labelStyle={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }} 
             >
-              सुरक्षित गर्नुहोस् (Save)
+              सुरक्षित गर्नुहोस्
             </Button>
 
             {!isNew && (

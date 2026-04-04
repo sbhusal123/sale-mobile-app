@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
-import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
+import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import apiClient, { setAuthCallbacks, setAuthToken } from '../api/client';
+import LoadingOverlay from '../components/LoadingOverlay';
 import { Category, Order, Product, User, initialOrders } from '../data/mock-data';
 import { storage } from '../utils/storage';
-import LoadingOverlay from '../components/LoadingOverlay';
 
 const USER_STORAGE_KEY = '@user_session';
 
@@ -34,8 +34,8 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => boolean;
   logout: () => void;
-  fetchCategories: () => Promise<void>;
-  fetchProducts: () => Promise<void>;
+  fetchCategories: (search?: string) => Promise<void>;
+  fetchProducts: (filters?: { search?: string; category?: number | null }) => Promise<void>;
   fetchConfig: () => Promise<void>;
   updateConfig: (updates: Partial<Config>) => Promise<boolean>;
 
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const fcmToken = await messaging().getToken();
       if (fcmToken && fcmToken !== lastRegisteredToken.current) {
         console.log('FCM Token:', fcmToken);
-        
+
         let deviceId = await storage.getItem('@device_id');
         if (!deviceId) {
           deviceId = `device_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
@@ -129,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user && user.accessToken) {
       const handleRefresh = async (token: string) => {
         if (token === lastRegisteredToken.current) return;
-        
+
         let deviceId = await storage.getItem('@device_id');
         if (!deviceId) {
           deviceId = `device_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
@@ -140,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       requestUserPermission();
-      
+
       const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
         if (remoteMessage.notification) {
           Alert.alert(
@@ -213,18 +213,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     loadSession();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (search?: string) => {
     try {
-      const response = await apiClient.get('categories/');
+      let url = 'categories/';
+      if (search) {
+        url += `?search=${encodeURIComponent(search)}`;
+      }
+      const response = await apiClient.get(url);
       setCategories(response.data);
     } catch (error) {
       console.error('Fetch categories error:', error);
     }
   };
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (filters?: { search?: string; category?: number | null }) => {
     try {
-      const response = await apiClient.get('products/');
+      let url = 'products/';
+      const params: string[] = [];
+
+      if (filters?.search) {
+        // Using "..." as per user request if needed, but standard is search=text
+        // However, I'll use standard param building and just ensure it matches the user's requirement.
+        params.push(`search=${encodeURIComponent(filters.search)}`);
+      }
+
+      if (filters?.category) {
+        params.push(`category=${filters.category}`);
+      }
+
+      if (params.length > 0) {
+        url += `?${params.join('&')}`;
+      }
+
+      const response = await apiClient.get(url);
+
+      console.log(response.data)
       setProducts(response.data);
     } catch (error) {
       console.error('Fetch products error:', error);
@@ -239,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('Fetch orders error:', error);
       if (error.response?.status === 404) {
-         console.warn('Orders endpoint not found at orders/. Please verify backend URL.');
+        console.warn('Orders endpoint not found at orders/. Please verify backend URL.');
       }
     }
   };
@@ -321,7 +344,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const addProduct = async (product: Omit<Product, 'id' | 'category'> & { category: number }) => {
     try {
-      const response = await apiClient.post('products/', product);
+      const formData = new FormData();
+      Object.keys(product).forEach((key) => {
+        const value = (product as any)[key];
+        if (key === 'image' && value && value.startsWith('file://')) {
+          formData.append('image', {
+            uri: value,
+            type: 'image/jpeg', // Or dynamic based on extension
+            name: 'product_image.jpg',
+          } as any);
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+        }
+      });
+
+      const response = await apiClient.post('products/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setProducts((prev) => [...prev, response.data]);
       return true;
     } catch (error) {
@@ -332,7 +371,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const editProduct = async (id: number, updates: Partial<Product>) => {
     try {
-      const response = await apiClient.patch(`products/${id}/`, updates);
+      const hasNewImage = !!(updates.image && updates.image.startsWith('file://'));
+      let response;
+
+      if (hasNewImage) {
+        const formData = new FormData();
+        Object.keys(updates).forEach((key) => {
+          const value = (updates as any)[key];
+          if (key === 'image' && value && value.startsWith('file://')) {
+            formData.append('image', {
+              uri: value,
+              type: 'image/jpeg',
+              name: 'product_image.jpg',
+            } as any);
+          } else if (key === 'category' && typeof value === 'object' && value !== null) {
+            formData.append(key, value.id);
+          } else if (value !== null && value !== undefined) {
+            // For other fields, including category if it's already an ID
+            formData.append(key, typeof value === 'object' ? JSON.stringify(value) : value);
+          }
+        });
+
+        response = await apiClient.patch(`products/${id}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+      } else {
+        const jsonPayload: any = { ...updates };
+
+        // If image is a URL, don't send it in JSON PATCH (unless the backend specifically expects it)
+        // Usually, we only send fields we want to change.
+        if (jsonPayload.image && typeof jsonPayload.image === 'string' && !jsonPayload.image.startsWith('file://')) {
+          delete jsonPayload.image;
+        }
+
+        // Standardize category to ID
+        if (jsonPayload.category && typeof jsonPayload.category === 'object') {
+          jsonPayload.category = jsonPayload.category.id;
+        }
+
+        response = await apiClient.patch(`products/${id}/`, jsonPayload);
+      }
+
       setProducts((prev) => prev.map((p) => (p.id === id ? response.data : p)));
       return true;
     } catch (error) {
@@ -441,7 +520,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         editCategory,
         deleteCategory,
         addOrder,
-         editOrder,
+        editOrder,
         deleteOrder,
         config,
         fetchConfig,

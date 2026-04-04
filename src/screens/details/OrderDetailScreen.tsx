@@ -3,8 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Menu, Surface, Text, TextInput, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useAuth } from '../../context/auth-context';
 import BackButton from '../../components/BackButton';
+import { useAuth } from '../../context/auth-context';
+
+const Icon = MaterialCommunityIcons as any;
 
 export default function OrderDetailScreen() {
   const route = useRoute<any>();
@@ -22,6 +24,8 @@ export default function OrderDetailScreen() {
   const [totalPrice, setTotalPrice] = useState(existingOrder?.total_price?.toString() || '');
   const [location, setLocation] = useState(existingOrder?.location || '');
   const [phone, setPhone] = useState(existingOrder?.phone || '');
+  const [specialInstructions, setSpecialInstructions] = useState(existingOrder?.special_instructions || '');
+  const [orderStatus, setOrderStatus] = useState(existingOrder?.order_status || 'Pending');
 
   const [menuVisible, setMenuVisible] = useState(false);
 
@@ -45,8 +49,8 @@ export default function OrderDetailScreen() {
       total_price: totalPrice || "0",
       location,
       phone,
-      special_instructions: existingOrder?.special_instructions || "",
-      order_status: existingOrder?.order_status || "Pending",
+      special_instructions: specialInstructions,
+      order_status: orderStatus,
       chat_user: existingOrder?.chat_user || "",
       chat_session: existingOrder?.chat_session || "",
     };
@@ -67,9 +71,9 @@ export default function OrderDetailScreen() {
 
   const handleDelete = () => {
     Alert.alert('मेटाउन निश्चित हुनुहुन्छ?', 'के तपाईं यो अर्डर हटाउन चाहनुहुन्छ?', [
-      { text: 'रद्द गर्नुहोस् (Cancel)', style: 'cancel' },
+      { text: 'रद्द गर्नुहोस्', style: 'cancel' },
       {
-        text: 'हटाउनुहोस् (Delete)', style: 'destructive', onPress: async () => {
+        text: 'हटाउनुहोस्', style: 'destructive', onPress: async () => {
           const success = await deleteOrder(Number(id));
           if (success) navigation.goBack();
         }
@@ -86,7 +90,7 @@ export default function OrderDetailScreen() {
         <BackButton />
         <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerRow}>
-            <MaterialCommunityIcons name="cart-plus" size={32} color={theme.colors.onSurface} />
+            <Icon name="cart-plus" size={32} color={theme.colors.onSurface} />
             <Text variant="headlineMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
               {isNew ? 'नयाँ अर्डर थप्नुहोस्' : 'अर्डर सम्पादन गर्नुहोस्'}
             </Text>
@@ -103,7 +107,7 @@ export default function OrderDetailScreen() {
                 contentStyle={{ justifyContent: 'space-between', flexDirection: 'row-reverse', height: 56 }}
                 icon="chevron-down"
               >
-                {selectedProduct ? selectedProduct.name : 'उत्पादन चयन गर्नुहोस् (Select Product)'}
+                {selectedProduct ? selectedProduct.name : 'उत्पादन चयन गर्नुहोस्'}
               </Button>
             }
             contentStyle={{ backgroundColor: theme.colors.surface }}
@@ -121,7 +125,7 @@ export default function OrderDetailScreen() {
           </Menu>
 
           <TextInput
-            label="मात्रा (Quantity)"
+            label="मात्रा"
             value={qty}
             onChangeText={setQty}
             keyboardType="numeric"
@@ -129,7 +133,7 @@ export default function OrderDetailScreen() {
             style={styles.input}
           />
           <TextInput
-            label="कुल मूल्य (Total Price)"
+            label="कुल मूल्य"
             value={totalPrice}
             onChangeText={setTotalPrice}
             keyboardType="numeric"
@@ -138,19 +142,81 @@ export default function OrderDetailScreen() {
             left={<TextInput.Affix text="₹ " />}
           />
           <TextInput
-            label="ठेगाना (Location)"
+            label="ठेगाना"
             value={location}
             onChangeText={setLocation}
             mode="outlined"
             style={styles.input}
           />
           <TextInput
-            label="सम्पर्क (Phone)"
+            label="सम्पर्क"
             value={phone}
             onChangeText={setPhone}
             mode="outlined"
             style={styles.input}
           />
+
+          <TextInput
+            label="अर्डरको स्थिति"
+            value={orderStatus}
+            onChangeText={setOrderStatus}
+            mode="outlined"
+            style={styles.input}
+          />
+
+          <View style={styles.statusSection}>
+            <Text variant="labelSmall" style={styles.statusLabel}>त्वरित अनुगमन (Quick Update)</Text>
+            <View style={styles.statusButtonRow}>
+              {(['PENDING', 'DELIVERING', 'COMPLETED'] as const).map((status) => (
+                <Button
+                  key={status}
+                  mode="outlined"
+                  onPress={() => setOrderStatus(status)}
+                  style={[
+                    styles.statusButton,
+                    orderStatus === status && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }
+                  ]}
+                  labelStyle={{ fontSize: 11, fontWeight: 'bold', color: orderStatus === status ? theme.colors.primary : theme.colors.onSurfaceVariant }}
+                  compact
+                >
+                  {status === 'PENDING' ? 'प्रतीक्षारत' : status === 'DELIVERING' ? 'पठाउँदै' : 'सम्पन्न'}
+                </Button>
+              ))}
+            </View>
+          </View>
+
+          <TextInput
+            label="विशेष निर्देशनहरू"
+            value={specialInstructions}
+            onChangeText={setSpecialInstructions}
+            mode="outlined"
+            multiline
+            numberOfLines={3}
+            style={styles.input}
+          />
+
+          {!isNew && (existingOrder as any)?.user && (
+            <View style={styles.customerSection}>
+              <View style={styles.sectionHeader}>
+                <Icon name="account-circle-outline" size={24} color={theme.colors.primary} />
+                <Text variant="titleMedium" style={styles.sectionTitle}>ग्राहकको विवरण (Read-only)</Text>
+              </View>
+              <Surface elevation={1} style={[styles.customerCard, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <View style={styles.detailRow}>
+                  <Text variant="labelLarge" style={styles.detailLabel}>नाम:</Text>
+                  <Text variant="bodyLarge">{((existingOrder as any).user).name || 'उपलब्ध छैन'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text variant="labelLarge" style={styles.detailLabel}>फोन:</Text>
+                  <Text variant="bodyLarge">{((existingOrder as any).user).phone || 'उपलब्ध छैन'}</Text>
+                </View>
+                <View style={styles.detailRow}>
+                  <Text variant="labelLarge" style={styles.detailLabel}>इमेल:</Text>
+                  <Text variant="bodyLarge">{((existingOrder as any).user).email || 'उपलब्ध छैन'}</Text>
+                </View>
+              </Surface>
+            </View>
+          )}
 
           <View style={styles.actions}>
             <Button
@@ -160,7 +226,7 @@ export default function OrderDetailScreen() {
               contentStyle={styles.btnContent}
               labelStyle={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}
             >
-              सुरक्षित गर्नुहोस् (Save)
+              सुरक्षित गर्नुहोस्
             </Button>
 
             {!isNew && (
@@ -172,7 +238,7 @@ export default function OrderDetailScreen() {
                 labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
                 textColor={theme.colors.error}
               >
-                हटाउनुहोस् (Delete)
+                हटाउनुहोस्
               </Button>
             )}
           </View>
@@ -192,4 +258,14 @@ const styles = StyleSheet.create({
   deleteBtn: { borderRadius: 12, borderColor: '#ef4444' },
   btnContent: { paddingVertical: 6 },
   btnLabel: { fontSize: 16, fontWeight: 'bold' },
+  customerSection: { marginTop: 24 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  sectionTitle: { fontWeight: 'bold', opacity: 0.8 },
+  customerCard: { padding: 16, borderRadius: 16, gap: 8 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  detailLabel: { opacity: 0.6 },
+  statusSection: { marginBottom: 20 },
+  statusLabel: { marginBottom: 8, opacity: 0.5, fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
+  statusButtonRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  statusButton: { borderRadius: 8, minWidth: 70 },
 });

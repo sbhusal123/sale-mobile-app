@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { Divider, FAB, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { Divider, FAB, IconButton, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import AppHeader from '../../components/AppHeader';
@@ -97,11 +97,20 @@ export default function OrdersScreen() {
                     {products.find(p => p.id === item.product)?.name || 'अज्ञात'} • {item.quantity} थान
                   </Text>
                 </View>
-                <View style={styles.orderDetailRow}>
-                  <Icon name="map-marker-outline" size={18} color={theme.colors.onSurfaceVariant} />
-                  <Text variant="bodySmall" style={styles.locationText}>
-                    {item.location} • {item.phone}
-                  </Text>
+                <View style={[styles.orderDetailRow, { justifyContent: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                    <Icon name="map-marker-outline" size={18} color={theme.colors.onSurfaceVariant} />
+                    <Text variant="bodySmall" style={styles.locationText} numberOfLines={1}>
+                      {item.location} • {item.phone}
+                    </Text>
+                  </View>
+                  <IconButton
+                    icon="eye"
+                    size={20}
+                    iconColor={theme.colors.primary}
+                    onPress={() => navigation.navigate('OrderChat', { id: item.id })}
+                    style={{ margin: 0 }}
+                  />
                 </View>
               </Surface>
             </TouchableRipple>

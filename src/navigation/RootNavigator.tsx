@@ -18,11 +18,13 @@ import CategoriesScreen from '../screens/main/CategoriesScreen';
 import HomeScreen from '../screens/main/HomeScreen';
 import OrdersScreen from '../screens/main/OrdersScreen';
 import ProductsScreen from '../screens/main/ProductsScreen';
+import ChatSessionsScreen from '../screens/main/ChatSessionsScreen';
 
 import CategoryDetailScreen from '../screens/details/CategoryDetailScreen';
 import OrderDetailScreen from '../screens/details/OrderDetailScreen';
 import ProductDetailScreen from '../screens/details/ProductDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
+import OrderChatScreen from '../screens/details/OrderChatScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -57,6 +59,7 @@ function MainNavigator() {
           else if (route.name === 'Products') iconName = focused ? 'package-variant-closed' : 'package-variant-closed-outline';
           else if (route.name === 'Categories') iconName = focused ? 'view-grid' : 'view-grid-outline';
           else if (route.name === 'Orders') iconName = focused ? 'cart' : 'cart-outline';
+          else if (route.name === 'Conversations') iconName = focused ? 'chat-processing' : 'chat-processing-outline';
           else if (route.name === 'Account') iconName = focused ? 'account' : 'account-outline';
 
           return <Icon name={iconName} size={24} color={color} />;
@@ -78,6 +81,7 @@ function MainNavigator() {
       <Drawer.Screen name="Products" component={ProductsScreen} options={{ drawerLabel: 'उत्पादनहरू' }} />
       <Drawer.Screen name="Categories" component={CategoriesScreen} options={{ drawerLabel: 'वर्गहरू' }} />
       <Drawer.Screen name="Orders" component={OrdersScreen} options={{ drawerLabel: 'अर्डरहरू' }} />
+      <Drawer.Screen name="Conversations" component={ChatSessionsScreen} options={{ drawerLabel: 'कुराकानीहरू' }} />
       <Drawer.Screen name="Account" component={AccountScreen} options={{ drawerLabel: 'खाता र सेटिङहरू' }} />
     </Drawer.Navigator>
   );
@@ -112,6 +116,7 @@ export function RootNavigator() {
           <Stack.Screen name="CategoryDetail" component={CategoryDetailScreen} />
           <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="OrderChat" component={OrderChatScreen} />
         </>
       )}
     </Stack.Navigator>

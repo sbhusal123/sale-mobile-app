@@ -39,6 +39,7 @@ export default function HomeScreen() {
     { title: 'उत्पादनहरू', description: 'स्टक प्रबन्ध गर्नुहोस्।', screen: 'Products', icon: 'package-variant-closed' },
     { title: 'वर्गहरू', description: 'वर्ग विवरण हेर्नुहोस्।', screen: 'Categories', icon: 'view-grid' },
     { title: 'अर्डरहरू', description: 'अर्डर इतिहास हेर्नुहोस्।', screen: 'Orders', icon: 'cart' },
+    { title: 'कुराकानीहरू', description: 'सोधपुछका कुराहरू।', screen: 'Conversations', icon: 'chat-processing' },
     { title: 'खाता', description: 'प्रोफाइल र लग आउट गर्नुहोस्।', screen: 'Account', icon: 'account-circle' },
   ];
 

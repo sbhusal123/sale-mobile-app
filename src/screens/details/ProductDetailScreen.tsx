@@ -247,7 +247,7 @@ export default function ProductDetailScreen() {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 64,
   },
   card: {

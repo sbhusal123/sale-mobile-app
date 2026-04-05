@@ -1,5 +1,5 @@
-import { useNavigation } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   FlatList,
   RefreshControl,
@@ -44,12 +44,16 @@ export default function ChatSessionsScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchSessions();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchSessions();
+    }, [])
+  );
 
   const onRefresh = () => {
     setRefreshing(true);
+    setLoading(true);
     fetchSessions();
   };
 
@@ -82,30 +86,77 @@ export default function ChatSessionsScreen() {
     </View>
   );
 
+  const formatRelativeTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'भर्खरै';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} मिनेट अघि`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} घण्टा अघि`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} दिन अघि`;
+    return date.toLocaleDateString('ne-NP');
+  };
+
   const renderSessionItem = ({ item }: { item: any }) => (
     <Surface elevation={1} style={styles.card}>
       <Card
         onPress={() => navigation.navigate('OrderChat', { chatSessionId: item.id })}
         style={{ backgroundColor: theme.colors.surface }}
       >
-        <Card.Title
-          title={item.chat_user_details?.name || 'अज्ञात प्रयोगकर्ता'}
-          subtitle={`${item.chat_user_details?.phone || 'फोन छैन'} • ${item.channel}`}
-          left={(props) => (
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.avatarSection}>
             <Avatar.Icon
-              {...props}
+              size={48}
               icon={getChannelIcon(item.channel)}
               style={{ backgroundColor: item.channel === 'WHATSAPP' ? '#25D366' : '#1877F2' }}
+              color="#fff"
             />
-          )}
-          right={(props) => (
-            <IconButton
-              {...props}
-              icon="chevron-right"
-              onPress={() => navigation.navigate('OrderChat', { chatSessionId: item.id })}
-            />
-          )}
-        />
+            {item.reply_from === 'HUMAN_ASSISTANT' && (
+              <View style={[styles.agentBadge, { backgroundColor: theme.colors.primary }]} />
+            )}
+          </View>
+          
+          <View style={styles.infoSection}>
+            <View style={styles.nameRow}>
+              <Text variant="titleMedium" style={styles.userName} numberOfLines={1}>
+                {item.chat_user_details?.name || 'अख्यात प्रयोगकर्ता'}
+              </Text>
+              <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
+                {formatRelativeTime(item.updated_at)}
+              </Text>
+            </View>
+            
+            <View style={styles.metaRow}>
+              <View style={[
+                styles.modeBadge, 
+                { backgroundColor: item.reply_from === 'AI_ASSISTANT' ? '#9C27B0' : theme.colors.primary }
+              ]}>
+                <Icon 
+                  name={item.reply_from === 'AI_ASSISTANT' ? 'robot' : 'account'} 
+                  size={12} 
+                  color="#fff" 
+                />
+                <Text variant="labelSmall" style={styles.modeLabel}>
+                  {item.reply_from === 'AI_ASSISTANT' ? 'एआई सहायक' : 'मानव एजेन्ट'}
+                </Text>
+              </View>
+              <View style={[styles.channelTag, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontSize: 10 }}>
+                  {item.channel}
+                </Text>
+              </View>
+            </View>
+          </View>
+          
+          <IconButton
+            icon="chevron-right"
+            size={20}
+            style={{ marginRight: -8 }}
+            onPress={() => navigation.navigate('OrderChat', { chatSessionId: item.id })}
+          />
+        </Card.Content>
       </Card>
     </Surface>
   );
@@ -116,7 +167,7 @@ export default function ChatSessionsScreen() {
       
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="खोज्नुहोस्..."
+          placeholder="कुराकानी खोज्नुहोस्..."
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
@@ -152,7 +203,7 @@ export default function ChatSessionsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   searchBar: {
@@ -160,13 +211,71 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.03)',
   },
   listContent: {
-    padding: 16,
+    padding: 20,
     paddingBottom: 40,
   },
   card: {
     marginBottom: 12,
     borderRadius: 12,
     overflow: 'hidden',
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  avatarSection: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  agentBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  infoSection: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  userName: {
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 8,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    gap: 4,
+  },
+  modeLabel: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  channelTag: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
   emptyContainer: {
     flex: 1,

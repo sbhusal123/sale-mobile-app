@@ -31,14 +31,16 @@ export default function OrdersScreen() {
 
   const onRefresh = React.useCallback(async () => {
     setRefreshing(true);
+    setIsLoading(true);
     await fetchOrders();
+    setIsLoading(false);
     setRefreshing(false);
-  }, []);
+  }, [fetchOrders]);
 
   const renderShimmer = () => (
     <View style={styles.list}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, opacity: 0.5, height: 120 }]}>
+        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: 'transparent', opacity: 0.5, height: 120 }]}>
           <View style={styles.cardHeader}>
             <ShimmerPlaceholder width="40%" height={24} />
             <ShimmerPlaceholder width="20%" height={24} />

@@ -44,8 +44,19 @@ export default function ShimmerPlaceholder({ width = '100%', height = 20, border
           width,
           height,
           borderRadius,
-          backgroundColor: theme.colors.surfaceVariant,
-          opacity,
+          backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+          opacity: theme.dark ? shimmerValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.15, 0.4],
+          }) : shimmerValue.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0.3, 0.7],
+          }),
+          shadowColor: theme.dark ? 'transparent' : '#000',
+          shadowOffset: theme.dark ? { width: 0, height: 0 } : { width: 0, height: 1 },
+          shadowOpacity: theme.dark ? 0 : 0.05,
+          shadowRadius: theme.dark ? 0 : 2,
+          elevation: theme.dark ? 0 : 1,
         },
         style,
       ]}

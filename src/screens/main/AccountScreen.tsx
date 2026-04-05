@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StyleSheet, View, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Surface, Text, TextInput, Button, useTheme, Divider, ActivityIndicator, IconButton } from 'react-native-paper';
 import { useAuth, Config } from '../../context/auth-context';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AppHeader from '../../components/AppHeader';
 import LoadingOverlay from '../../components/LoadingOverlay';
+import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Icon = MaterialCommunityIcons as any;
@@ -18,13 +19,16 @@ export default function AccountScreen() {
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Config>>(config || {});
 
-  useEffect(() => {
-    const init = async () => {
-      await fetchConfig();
-      setLoading(false);
-    };
-    init();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const init = async () => {
+        setLoading(true);
+        await fetchConfig();
+        setLoading(false);
+      };
+      init();
+    }, [])
+  );
 
   useEffect(() => {
     if (config) {
@@ -47,13 +51,26 @@ export default function AccountScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+  const renderShimmer = () => (
+    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <Surface elevation={1} style={[styles.profileCard, { backgroundColor: theme.colors.surface, borderColor: 'transparent' }]}>
+        <ShimmerPlaceholder width={72} height={72} borderRadius={24} />
+        <View style={styles.profileInfo}>
+          <ShimmerPlaceholder width={120} height={24} style={{ marginBottom: 8 }} />
+          <ShimmerPlaceholder width={180} height={16} />
+        </View>
+      </Surface>
+      {[1, 2, 3].map(i => (
+        <View key={i} style={styles.section}>
+          <ShimmerPlaceholder width={100} height={20} style={{ marginBottom: 12, marginLeft: 4 }} />
+          <Surface elevation={1} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: 'transparent' }]}>
+            <ShimmerPlaceholder width="100%" height={40} borderRadius={8} style={{ marginBottom: 16 }} />
+            <ShimmerPlaceholder width="100%" height={40} borderRadius={8} />
+          </Surface>
+        </View>
+      ))}
+    </ScrollView>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -62,11 +79,12 @@ export default function AccountScreen() {
         onMenu={() => navigation.openDrawer()} 
       />
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-      >
+      {loading ? renderShimmer() : (
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+        >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Profile Summary */}
           <Surface elevation={1} style={[styles.profileCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
@@ -176,6 +194,7 @@ export default function AccountScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+    )}
 
       <LoadingOverlay visible={saving} message="सुरक्षित हुँदैछ..." />
     </View>
@@ -192,7 +211,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scrollContent: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingTop: 16,
   },
   profileCard: {

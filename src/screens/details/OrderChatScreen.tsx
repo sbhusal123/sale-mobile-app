@@ -6,6 +6,7 @@ import {
   Platform,
   StyleSheet,
   View,
+  Alert,
 } from 'react-native';
 import {
   ActivityIndicator,
@@ -86,6 +87,7 @@ export default function OrderChatScreen() {
   const [isHumanAgent, setIsHumanAgent] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [isMessagesLoading, setIsMessagesLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionDetails, setSessionDetails] = useState<any>(null);
 
@@ -174,27 +176,31 @@ export default function OrderChatScreen() {
     };
   }, [chatSession, user?.accessToken]);
 
-  const handleSendMessage = () => {
-    if (message.trim().length === 0) return;
+  const handleSendMessage = async () => {
+    if (message.trim().length === 0 || !chatSession) return;
 
-    const payload = {
-      message: message,
-      sender: 'user',
-    };
+    if (!isHumanAgent) {
+      Alert.alert(
+        'मानव मोड आवश्यक छ',
+        'प्रत्यूत्तर पठाउनको लागि कृपया पहिले मानव एजेन्ट मोडमा स्विच गर्नुहोस्।'
+      );
+      return;
+    }
 
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(JSON.stringify(payload));
-
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: message,
-        sender: 'user',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    setIsSending(true);
+    try {
+      const payload = {
+        message: message,
+        sender: 'HUMAN_ASSISTANT',
+        session: chatSession,
       };
-      setMessages((prev) => [newMessage, ...prev]); // Newest at index 0
+
+      await apiClient.post('chat/', payload);
       setMessage('');
-    } else {
-      console.warn('WS not connected');
+    } catch (err) {
+      console.error('Error sending message:', err);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -270,8 +276,8 @@ export default function OrderChatScreen() {
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 90}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <Surface elevation={2} style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         <View style={styles.headerTop}>
@@ -340,7 +346,7 @@ export default function OrderChatScreen() {
           styles.inputContainer,
           {
             backgroundColor: theme.colors.surface,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+            paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
           }
         ]}
       >
@@ -348,6 +354,8 @@ export default function OrderChatScreen() {
           placeholder="यहाँ लेख्वनुहोस्..."
           value={message}
           onChangeText={setMessage}
+          selectionColor={theme.colors.primary}
+          cursorColor={theme.colors.primary}
           mode="flat"
           style={[styles.input, { backgroundColor: theme.colors.surface }]}
           underlineColor="transparent"
@@ -361,7 +369,8 @@ export default function OrderChatScreen() {
           iconColor="#fff"
           size={24}
           onPress={handleSendMessage}
-          disabled={message.trim().length === 0}
+          disabled={isSending || message.trim().length === 0}
+          loading={isSending}
         />
       </Surface>
     </KeyboardAvoidingView>
@@ -446,36 +455,36 @@ const styles = StyleSheet.create({
   messageBubble: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 24,
+    borderRadius: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowRadius: 2,
+    elevation: 1,
   },
   timestamp: {
     alignSelf: 'flex-end',
-    marginTop: 6,
+    marginTop: 4,
     fontSize: 10,
-    opacity: 0.8,
+    opacity: 0.6,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 12,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 16,
   },
   input: {
     flex: 1,
     maxHeight: 120,
-    fontSize: 16,
-    paddingHorizontal: 0,
+    fontSize: 15,
+    backgroundColor: 'transparent',
   },
 });

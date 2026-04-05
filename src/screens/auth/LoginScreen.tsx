@@ -18,6 +18,7 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Auto-redirect if already logged in (standard RN logic might prefer this in a Navigator)
   useEffect(() => {
@@ -27,7 +28,9 @@ export default function LoginScreen() {
   }, [user]);
 
   const submit = async () => {
+    setLoading(true);
     const success = await login(email.trim(), password);
+    setLoading(false);
     // Navigation will handle redirect via Auth state in RootNavigator
     console.log(success);
   };
@@ -80,6 +83,8 @@ export default function LoginScreen() {
               style={styles.button}
               contentStyle={styles.buttonContent}
               labelStyle={styles.buttonText}
+              loading={loading}
+              disabled={loading}
             >
               साइन इन गर्नुहोस्
             </Button>

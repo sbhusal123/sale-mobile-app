@@ -249,7 +249,7 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16, paddingTop: 32, paddingBottom: 64 },
+  container: { padding: 20, paddingTop: 32, paddingBottom: 64 },
   card: { padding: 24, borderRadius: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
   input: { marginBottom: 16, backgroundColor: 'transparent' },

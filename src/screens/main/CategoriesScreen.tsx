@@ -49,7 +49,7 @@ export default function CategoriesScreen() {
   const renderShimmer = () => (
     <View style={styles.list}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, opacity: 0.5, height: 80 }]}>
+        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: 'transparent', opacity: 0.5, height: 80 }]}>
           <ShimmerPlaceholder width="60%" height={24} style={{ marginBottom: 8 }} />
           <ShimmerPlaceholder width="90%" height={16} />
         </View>
@@ -125,7 +125,7 @@ export default function CategoriesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   headerRow: {

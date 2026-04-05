@@ -220,13 +220,13 @@ export default function ProductsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchContainer: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     paddingVertical: 12,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     marginBottom: 20
   },
   headerTitleContainer: {
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   categoryContainer: { marginBottom: 20 },
-  categoryList: { paddingHorizontal: 16, gap: 10 },
+  categoryList: { paddingHorizontal: 20, gap: 10 },
   chip: {
     height: 36,
     borderRadius: 12,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  list: { paddingHorizontal: 16, gap: 16, paddingBottom: 100 },
+  list: { paddingHorizontal: 20, gap: 16, paddingBottom: 100 },
   cardWrapper: {
     borderRadius: 20,
     overflow: 'hidden',

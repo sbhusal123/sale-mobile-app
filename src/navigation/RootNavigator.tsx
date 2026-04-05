@@ -29,10 +29,24 @@ import OrderChatScreen from '../screens/details/OrderChatScreen';
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-import { DrawerContentScrollView, DrawerItemList } from '@react-navigation/drawer';
+import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
+import { Alert } from 'react-native';
 
 function CustomDrawerContent(props: any) {
   const theme = useTheme();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    Alert.alert(
+      'लग आउट',
+      'के तपाईं निश्चित रूपमा लग आउट गर्न चाहनुहुन्छ?',
+      [
+        { text: 'रद्द गर्नुहोस्', style: 'cancel' },
+        { text: 'लग आउट', style: 'destructive', onPress: () => logout() },
+      ]
+    );
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 40 }}>
       <View style={{ paddingHorizontal: 20, marginBottom: 20 }}>
@@ -41,6 +55,14 @@ function CustomDrawerContent(props: any) {
       </View>
       <View style={{ height: 1, backgroundColor: theme.colors.outline, opacity: 0.1, marginVertical: 16, marginHorizontal: 20 }} />
       <DrawerItemList {...props} />
+      
+      <View style={{ height: 1, backgroundColor: theme.colors.outline, opacity: 0.1, marginVertical: 16, marginHorizontal: 20 }} />
+      <DrawerItem
+        label="लग आउट गर्नुहोस्"
+        labelStyle={{ fontWeight: '900', color: theme.colors.error }}
+        icon={({ color, size }) => <Icon name="logout" size={size} color={theme.colors.error} />}
+        onPress={handleLogout}
+      />
     </DrawerContentScrollView>
   );
 }
@@ -52,6 +74,7 @@ function MainNavigator() {
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
+      backBehavior="initialRoute"
       screenOptions={({ route }) => ({
         drawerIcon: ({ focused, color, size }) => {
           let iconName = '';
@@ -89,6 +112,8 @@ function MainNavigator() {
 
 import { ActivityIndicator } from 'react-native';
 
+const isFirstMount = { current: true };
+
 export function RootNavigator() {
   const { user, loading } = useAuth();
   const theme = useTheme();
@@ -101,12 +126,21 @@ export function RootNavigator() {
     );
   }
 
+  const initialRoute = isFirstMount.current ? "Splash" : (user ? "Main" : "Login");
+
+  // Mark as not first mount after the first render cycle
+  if (isFirstMount.current) {
+    setTimeout(() => {
+      isFirstMount.current = false;
+    }, 3000);
+  }
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
-      <Stack.Screen name="Splash" component={SplashScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
       {!user ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       ) : (

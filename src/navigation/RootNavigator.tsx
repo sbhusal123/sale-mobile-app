@@ -112,8 +112,6 @@ function MainNavigator() {
 
 import { ActivityIndicator } from 'react-native';
 
-const isFirstMount = { current: true };
-
 export function RootNavigator() {
   const { user, loading } = useAuth();
   const theme = useTheme();
@@ -126,21 +124,12 @@ export function RootNavigator() {
     );
   }
 
-  const initialRoute = isFirstMount.current ? "Splash" : (user ? "Main" : "Login");
-
-  // Mark as not first mount after the first render cycle
-  if (isFirstMount.current) {
-    setTimeout(() => {
-      isFirstMount.current = false;
-    }, 3000);
-  }
-
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
+      <Stack.Screen name="Splash" component={SplashScreen} />
       {!user ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       ) : (

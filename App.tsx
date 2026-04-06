@@ -11,58 +11,62 @@ import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-const blueColors = {
-  primary: '#3B82F6', // Vibrant Blue
-  secondary: '#10B981', // Emerald
-  tertiary: '#64748B', // Slate
-  error: '#FF5252',
+const premiumColors = {
+  primary: '#6366F1', // Indigo 500
+  secondary: '#10B981', // Emerald 500
+  tertiary: '#F59E0B', // Amber 500
+  error: '#EF4444', // Red 500
 };
 
 const darkTheme = {
   ...MD3DarkTheme,
-  roundness: 12,
+  roundness: 16,
   colors: {
     ...MD3DarkTheme.colors,
-    ...blueColors,
-    background: '#0F172A', // Slate 900
-    surface: '#1E293B', // Slate 800
-    surfaceVariant: '#334155', // Slate 700
-    onSurface: '#F8FAFC', // Slate 50
-    onSurfaceVariant: '#94A3B8', // Slate 400
-    outline: '#334155',
+    ...premiumColors,
+    background: '#0B0F1A', // Deeper Dark
+    surface: '#161B2A', // Slate 900-ish
+    surfaceVariant: '#1F2937', // Slate 800-ish
+    onSurface: '#F9FAFB', 
+    onSurfaceVariant: '#9CA3AF',
+    outline: '#374151',
     elevation: {
       level0: 'transparent',
-      level1: '#1E293B',
-      level2: '#334155',
-      level3: '#475569',
-      level4: '#5E6D82',
-      level5: '#768599',
+      level1: '#161B2A',
+      level2: '#1F2937',
+      level3: '#374151',
+      level4: '#4B5563',
+      level5: '#6B7280',
     },
   },
 };
 
 const lightTheme = {
   ...MD3LightTheme,
-  roundness: 12,
+  roundness: 16,
   colors: {
     ...MD3LightTheme.colors,
-    ...blueColors,
-    background: '#F8FAFC', // Slate 50
+    ...premiumColors,
+    primary: '#4F46E5', // Indigo 600 for light
+    secondary: '#059669', // Emerald 600 for light
+    background: '#F9FAFB', // Slate 50
     surface: '#FFFFFF',
-    surfaceVariant: '#F1F5F9', // Slate 100
-    onSurface: '#1E293B', // Slate 800
-    onSurfaceVariant: '#64748B', // Slate 500
-    outline: '#E2E8F0',
+    surfaceVariant: '#F3F4F6', // Gray 100
+    onSurface: '#111827', // Gray 900
+    onSurfaceVariant: '#4B5563', // Gray 600
+    outline: '#E5E7EB',
     elevation: {
       level0: 'transparent',
       level1: '#FFFFFF',
-      level2: '#F8FAFC',
-      level3: '#F1F5F9',
-      level4: '#E2E8F0',
-      level5: '#CBD5E1',
+      level2: '#F9FAFB',
+      level3: '#F3F4F6',
+      level4: '#E5E7EB',
+      level5: '#D1D5DB',
     },
   },
 };
+
+import { initI18n } from '@/i18n/i18n';
 
 function MainApp() {
   const { isDark } = useThemeContext();
@@ -87,6 +91,16 @@ function MainApp() {
 }
 
 export default function App() {
+  const [isI18nInitialized, setIsI18nInitialized] = React.useState(false);
+
+  React.useEffect(() => {
+    initI18n().then(() => setIsI18nInitialized(true));
+  }, []);
+
+  if (!isI18nInitialized) {
+    return null; // Or a very basic splash view
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

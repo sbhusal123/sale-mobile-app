@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, View } from 'react-native';
-import { Chip, FAB, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { FlatList, Image, RefreshControl, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Chip, FAB, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
@@ -9,10 +9,12 @@ import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/auth-context';
 import { getImageUri } from '../../utils/url';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function ProductsScreen() {
+  const { t } = useTranslation();
   const { products, fetchProducts, categories } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
@@ -36,7 +38,7 @@ export default function ProductsScreen() {
   useFocusEffect(
     React.useCallback(() => {
       loadProducts();
-    }, [selectedCategoryId]) // Reload when category changes or when screen focuses
+    }, [selectedCategoryId])
   );
 
   const onRefresh = React.useCallback(async () => {
@@ -56,7 +58,6 @@ export default function ProductsScreen() {
 
   const handleCategorySelect = (id: number | null) => {
     setSelectedCategoryId(id);
-    // loadProducts will be called by useFocusEffect's dependency or manually
     loadProducts(searchQuery, id);
   };
 
@@ -68,14 +69,14 @@ export default function ProductsScreen() {
   const renderShimmer = () => (
     <View style={styles.list}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, opacity: 0.5 }]}>
-          <ShimmerPlaceholder width={80} height={80} borderRadius={12} />
+        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          <ShimmerPlaceholder width={90} height={90} borderRadius={16} />
           <View style={styles.info}>
-            <ShimmerPlaceholder width="60%" height={20} style={{ marginBottom: 8 }} />
-            <ShimmerPlaceholder width="40%" height={16} style={{ marginBottom: 12 }} />
+            <ShimmerPlaceholder width="70%" height={18} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="40%" height={12} style={{ marginBottom: 12 }} />
             <View style={styles.priceRow}>
-              <ShimmerPlaceholder width="30%" height={24} />
-              <ShimmerPlaceholder width="30%" height={16} />
+              <ShimmerPlaceholder width="30%" height={22} />
+              <ShimmerPlaceholder width="35%" height={24} borderRadius={8} />
             </View>
           </View>
         </View>
@@ -86,53 +87,51 @@ export default function ProductsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <AppHeader 
-        title="उत्पादनहरू" 
+        title={t('products.title')} 
         onMenu={() => navigation.openDrawer()} 
       />
       
-      <View style={styles.searchContainer}>
+      <View style={styles.headerControls}>
         <Searchbar
-          placeholder="सामान खोज्नुहोस्..."
+          placeholder={t('products.search_placeholder')}
           onChangeText={handleSearchChange}
           value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}
+          style={[styles.searchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}
           inputStyle={[styles.searchInput, { color: theme.colors.onSurface }]}
-          elevation={0}
+          elevation={2}
           iconColor={theme.colors.primary}
           placeholderTextColor={theme.colors.onSurfaceVariant}
         />
-      </View>
-
-      <View style={styles.categoryContainer}>
-        <FlatList
-          horizontal
-          data={[{ id: null, title: 'सबै' }, ...categories]}
-          keyExtractor={(item) => String(item.id)}
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Chip
-              selected={selectedCategoryId === item.id}
-              onPress={() => handleCategorySelect(item.id)}
-              style={[
-                styles.chip,
-                selectedCategoryId === item.id 
-                  ? { backgroundColor: theme.colors.primary } 
-                  : { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }
-              ]}
-              textStyle={[
-                styles.chipText,
-                selectedCategoryId === item.id 
-                  ? { color: '#fff' } 
-                  : { color: theme.colors.onSurfaceVariant }
-              ]}
-              showSelectedOverlay={false}
-              mode="flat"
-            >
-              {item.title}
-            </Chip>
-          )}
-          contentContainerStyle={styles.categoryList}
-        />
+        
+        <View style={styles.categoryContainer}>
+          <FlatList
+            horizontal
+            data={[{ id: null, title: t('products.all') }, ...categories]}
+            keyExtractor={(item) => String(item.id)}
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <Chip
+                selected={selectedCategoryId === item.id}
+                onPress={() => handleCategorySelect(item.id)}
+                style={[
+                  styles.chip,
+                  selectedCategoryId === item.id 
+                    ? { backgroundColor: theme.colors.primary } 
+                    : { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }
+                ]}
+                textStyle={[
+                  styles.chipText,
+                  { color: selectedCategoryId === item.id ? '#FFFFFF' : theme.colors.onSurfaceVariant }
+                ]}
+                mode="flat"
+                showSelectedOverlay
+              >
+                {item.title}
+              </Chip>
+            )}
+            contentContainerStyle={styles.categoryList}
+          />
+        </View>
       </View>
 
       {isLoading ? renderShimmer() : (
@@ -142,72 +141,67 @@ export default function ProductsScreen() {
           contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
           }
           renderItem={({ item }) => (
-            <TouchableRipple
-              onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
-              style={styles.cardWrapper}
-              rippleColor={theme.colors.primary + '1A'}
-            >
-              <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-                <TouchableRipple
-                  onPress={() => item.image && openViewer(item.image)}
-                  style={styles.imageWrapper}
-                  rippleColor={theme.colors.primary + '33'}
-                >
-                  <View>
+            <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+              <TouchableRipple
+                onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
+                style={styles.cardRipple}
+                rippleColor={theme.colors.primary + '1A'}
+              >
+                <View style={styles.cardContent}>
+                  <TouchableOpacity
+                    onPress={() => item.image && openViewer(item.image)}
+                    activeOpacity={0.8}
+                    style={styles.imageContainer}
+                  >
                     {item.image ? (
                       <Image source={{ uri: getImageUri(item.image) || '' }} style={styles.image} resizeMode="cover" />
                     ) : (
-                      <View style={[styles.image, styles.emptyImage]}>
-                        <Icon name="package-variant" size={32} color={theme.colors.primary + '4D'} />
+                      <View style={[styles.image, styles.emptyImage, { backgroundColor: theme.colors.surfaceVariant }]}>
+                        <Icon name="package-variant" size={32} color={theme.colors.primary} />
                       </View>
                     )}
                     {item.quantity <= 5 && item.quantity > 0 && (
-                      <View style={styles.lowStockBadge}>
-                        <Text style={styles.badgeText}>न्यून स्टक</Text>
+                      <View style={[styles.lowStockBadge, { backgroundColor: '#FB7185' }]}>
+                        <Text style={styles.badgeText}>{t('products.low_stock')}</Text>
                       </View>
                     )}
-                  </View>
-                </TouchableRipple>
+                  </TouchableOpacity>
 
-                <View style={styles.info}>
-                  <Text variant="titleMedium" style={[styles.productName, { color: theme.colors.onSurface }]}>
-                    {item.name}
-                  </Text>
-                  <Text variant="labelSmall" style={[styles.categoryName, { color: theme.colors.primary }]}>
-                    {item.category.title}
-                  </Text>
-
-                  <View style={styles.priceRow}>
-                    <Text variant="titleLarge" style={[styles.priceText, { color: theme.colors.onSurface }]}>
-                      ₹{parseFloat(item.price).toLocaleString()}
+                  <View style={styles.info}>
+                    <Text variant="titleMedium" style={[styles.productName, { color: theme.colors.onSurface }]}>
+                      {item.name}
                     </Text>
-                    <View style={[styles.stockBox, { backgroundColor: item.quantity > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }]}>
-                      <Text style={[styles.stockText, { color: item.quantity > 0 ? theme.colors.secondary : theme.colors.error }]}>
-                        {item.quantity > 0 ? `${item.quantity} बाँकी` : 'सकियो'}
+                    <Text variant="labelSmall" style={[styles.categoryName, { color: theme.colors.primary }]}>
+                      {item.category?.title?.toUpperCase()}
+                    </Text>
+
+                    <View style={styles.priceRow}>
+                      <Text variant="headlineSmall" style={[styles.priceText, { color: theme.colors.onSurface }]}>
+                        ₹{parseFloat(item.price).toLocaleString()}
                       </Text>
+                      <View style={[styles.stockBox, { backgroundColor: item.quantity > 0 ? theme.colors.secondary + '15' : theme.colors.error + '15' }]}>
+                        <Text style={[styles.stockText, { color: item.quantity > 0 ? theme.colors.secondary : theme.colors.error }]}>
+                          {item.quantity > 0 ? t('products.units_left', { count: item.quantity }) : t('products.out_of_stock')}
+                        </Text>
+                      </View>
                     </View>
                   </View>
                 </View>
-                <IconButton
-                  icon="chevron-right"
-                  size={20}
-                  iconColor={theme.colors.primary}
-                  style={styles.arrowBtn}
-                />
-              </Surface>
-            </TouchableRipple>
+              </TouchableRipple>
+            </Surface>
           )}
         />
       )}
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 48 + insets.bottom }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 32 + insets.bottom }]}
         onPress={() => navigation.navigate('ProductDetail', { id: 'new' })}
-        color="#fff"
+        color="#FFFFFF"
+        label={t('common.add') || 'Add'}
       />
 
       <ImageViewer
@@ -221,130 +215,120 @@ export default function ProductsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20
-  },
-  headerTitleContainer: {
-    marginLeft: 12,
-  },
-  headerTitle: {
-    fontWeight: '900',
-    color: '#D4AF37',
-    fontSize: 20,
-  },
-  headerSubtitle: {
-    color: '#94A3B8',
-    opacity: 0.5,
-    marginTop: -2,
+  headerControls: {
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   searchBar: {
-    borderRadius: 14,
-    height: 48,
-    borderWidth: 1,
+    marginHorizontal: 20,
+    borderRadius: 18,
+    height: 52,
+    borderWidth: 1.5,
+    marginBottom: 16,
   },
   searchInput: {
-    fontSize: 14,
-    minHeight: 48,
+    fontSize: 15,
+    minHeight: 52,
+    fontWeight: '500',
   },
-  categoryContainer: { marginBottom: 20 },
+  categoryContainer: { marginBottom: 12 },
   categoryList: { paddingHorizontal: 20, gap: 10 },
   chip: {
-    height: 36,
-    borderRadius: 12,
+    height: 38,
+    borderRadius: 14,
   },
   chipText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 13,
+    fontWeight: '700',
   },
-  list: { paddingHorizontal: 20, gap: 16, paddingBottom: 100 },
-  cardWrapper: {
-    borderRadius: 20,
+  list: { paddingHorizontal: 20, paddingTop: 8, gap: 18 },
+  cardSurface: {
+    borderRadius: 24,
     overflow: 'hidden',
+    marginBottom: 18,
   },
-  card: {
-    borderRadius: 20,
-    padding: 12,
+  cardRipple: {
+    width: '100%',
+  },
+  cardContent: {
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(59, 130, 246, 0.05)',
+    gap: 16,
   },
-  imageWrapper: {
+  imageContainer: {
     position: 'relative',
-    borderRadius: 14,
+    borderRadius: 18,
     overflow: 'hidden',
+    elevation: 3,
   },
   image: {
-    width: 90,
-    height: 90,
-    backgroundColor: 'rgba(0,0,0,0.05)'
+    width: 100,
+    height: 100,
   },
   emptyImage: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(59, 130, 246, 0.05)',
   },
   lowStockBadge: {
     position: 'absolute',
-    top: -4,
-    left: -4,
-    backgroundColor: '#FB7185',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    elevation: 3,
+    top: 6,
+    left: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    elevation: 4,
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 8,
-    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+    textTransform: 'uppercase',
   },
   info: { flex: 1, justifyContent: 'center' },
   productName: {
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 18,
+    letterSpacing: -0.4,
     marginBottom: 2,
   },
   categoryName: {
+    fontWeight: '800',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    marginBottom: 12,
     opacity: 0.8,
-    marginBottom: 8,
-    fontWeight: '700',
-    letterSpacing: 0.2,
   },
   priceRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   priceText: {
     fontWeight: '900',
-    letterSpacing: -0.5,
+    letterSpacing: -0.8,
   },
   stockBox: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
   },
   stockText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  arrowBtn: {
-    margin: 0,
-    opacity: 0.5,
+    fontSize: 11,
+    fontWeight: '800',
   },
   fab: {
     position: 'absolute',
     right: 24,
-    bottom: 48,
     borderRadius: 20,
+    elevation: 6,
+  },
+  card: { // For Shimmer matching
+    borderRadius: 24,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 18,
   },
 });

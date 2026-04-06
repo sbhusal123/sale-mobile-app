@@ -3,6 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -12,7 +13,8 @@ interface BackButtonProps {
   color?: string;
 }
 
-export default function BackButton({ onPress, label = 'पछाडि', color }: BackButtonProps) {
+export default function BackButton({ onPress, label, color }: BackButtonProps) {
+  const { t } = useTranslation();
   const navigation = useNavigation();
   const theme = useTheme();
 
@@ -23,6 +25,8 @@ export default function BackButton({ onPress, label = 'पछाडि', color }
       navigation.goBack();
     }
   };
+
+  const displayLabel = label || t('common.back');
 
   return (
     <TouchableOpacity
@@ -36,7 +40,7 @@ export default function BackButton({ onPress, label = 'पछाडि', color }
         color={color || theme.colors.primary}
       />
       <Text style={[styles.label, { color: color || theme.colors.primary }]}>
-        {label}
+        {displayLabel}
       </Text>
     </TouchableOpacity>
   );

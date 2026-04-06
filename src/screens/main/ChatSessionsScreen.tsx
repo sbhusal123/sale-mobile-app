@@ -20,10 +20,12 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import apiClient from '../../api/client';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function ChatSessionsScreen() {
+  const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -92,11 +94,11 @@ export default function ChatSessionsScreen() {
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-    if (diffInSeconds < 60) return 'भर्खरै';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} मिनेट अघि`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} घण्टा अघि`;
-    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} दिन अघि`;
-    return date.toLocaleDateString('ne-NP');
+    if (diffInSeconds < 60) return t('chat.just_now');
+    if (diffInSeconds < 3600) return t('chat.minutes_ago', { count: Math.floor(diffInSeconds / 60) });
+    if (diffInSeconds < 86400) return t('chat.hours_ago', { count: Math.floor(diffInSeconds / 3600) });
+    if (diffInSeconds < 604800) return t('chat.days_ago', { count: Math.floor(diffInSeconds / 86400) });
+    return date.toLocaleDateString(i18n.language === 'ne' ? 'ne-NP' : 'en-US');
   };
 
   const renderSessionItem = ({ item }: { item: any }) => (
@@ -121,7 +123,7 @@ export default function ChatSessionsScreen() {
           <View style={styles.infoSection}>
             <View style={styles.nameRow}>
               <Text variant="titleMedium" style={styles.userName} numberOfLines={1}>
-                {item.chat_user_details?.name || 'अख्यात प्रयोगकर्ता'}
+                {item.chat_user_details?.name || t('chat.unknown_user')}
               </Text>
               <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
                 {formatRelativeTime(item.updated_at)}
@@ -139,7 +141,7 @@ export default function ChatSessionsScreen() {
                   color="#fff" 
                 />
                 <Text variant="labelSmall" style={styles.modeLabel}>
-                  {item.reply_from === 'AI_ASSISTANT' ? 'एआई सहायक' : 'मानव एजेन्ट'}
+                  {item.reply_from === 'AI_ASSISTANT' ? t('chat.ai_assistant') : t('chat.human_agent')}
                 </Text>
               </View>
               <View style={[styles.channelTag, { backgroundColor: theme.colors.surfaceVariant }]}>
@@ -163,11 +165,11 @@ export default function ChatSessionsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppHeader title="कुराकानीहरू" onMenu={() => navigation.openDrawer()} />
+      <AppHeader title={t('chat.title')} onMenu={() => navigation.openDrawer()} />
       
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="कुराकानी खोज्नुहोस्..."
+          placeholder={t('chat.search_placeholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
@@ -189,7 +191,7 @@ export default function ChatSessionsScreen() {
               <View style={styles.emptyContainer}>
                 <Icon name="chat-sleep-outline" size={64} color={theme.colors.outline} />
                 <Text variant="bodyLarge" style={{ marginTop: 16, color: theme.colors.outline }}>
-                  कुनै कुराकानी भेटिएन
+                  {t('chat.no_sessions')}
                 </Text>
               </View>
             ) : null

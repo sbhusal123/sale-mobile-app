@@ -11,14 +11,11 @@ interface AppHeaderProps {
   onMenu?: () => void;
 }
 
+import HeaderControls from './HeaderControls';
+
 const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { isDark, setThemeMode } = useThemeContext();
-
-  const toggleTheme = () => {
-    setThemeMode(isDark ? 'light' : 'dark');
-  };
 
   return (
     <View style={[
@@ -40,7 +37,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu }
           />
         ) : (
           <IconButton
-            icon="menu"
+            icon="menu-variant"
             size={28}
             iconColor={theme.colors.onSurface}
             onPress={onMenu}
@@ -52,44 +49,41 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu }
         </Text>
       </View>
 
-      <IconButton
-        icon={isDark ? 'weather-sunny' : 'weather-night'}
-        size={24}
-        iconColor={isDark ? theme.colors.primary : theme.colors.primary}
-        onPress={toggleTheme}
-        style={[styles.toggleBtn, { backgroundColor: theme.colors.surfaceVariant }]}
-      />
+      <View style={styles.rightSection}>
+        <HeaderControls />
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 64,
+    minHeight: 70,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    elevation: 2,
-    borderBottomWidth: 0.5,
+    paddingHorizontal: 8,
+    elevation: 4,
+    borderBottomWidth: 1,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 8,
   },
   iconBtn: {
-    marginRight: -8,
-    marginLeft: -8,
+    margin: 0,
   },
   title: {
     fontWeight: '900',
-    marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-  toggleBtn: {
-    borderRadius: 14,
-    marginVertical: 0,
-    marginHorizontal: 0,
+    fontSize: 20,
+    marginLeft: 4,
+    letterSpacing: -0.5,
   },
 });
 

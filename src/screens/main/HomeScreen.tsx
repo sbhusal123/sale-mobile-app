@@ -7,11 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function HomeScreen() {
-  const { user, logout, orders, fetchCategories, fetchProducts, fetchOrders, fetchConfig } = useAuth();
+  const { t } = useTranslation();
+  const { user, orders, fetchCategories, fetchProducts, fetchOrders, fetchConfig } = useAuth();
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -22,40 +24,38 @@ export default function HomeScreen() {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     setIsLoading(true);
-    await Promise.all([
-      fetchCategories(),
-      fetchProducts(),
-      fetchOrders(),
-      fetchConfig(),
-    ]);
-    setIsLoading(false);
-    setRefreshing(false);
+    try {
+      await Promise.all([
+        fetchCategories(),
+        fetchProducts(),
+        fetchOrders(),
+        fetchConfig(),
+      ]);
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
   }, [fetchCategories, fetchProducts, fetchOrders, fetchConfig]);
 
   useFocusEffect(
     useCallback(() => {
-      const load = async () => {
-        setIsLoading(true);
-        await onRefresh();
-        setIsLoading(false);
-      };
-      load();
-    }, [])
+      onRefresh();
+    }, [onRefresh])
   );
 
   const totalOrders = orders?.length || 0;
   const totalSales = orders?.reduce((acc: number, o: any) => acc + parseFloat(o.total_price || 0), 0) || 0;
 
   const navItems = [
-    { title: 'उत्पादनहरू', description: 'स्टक प्रबन्ध गर्नुहोस्।', screen: 'Products', icon: 'package-variant-closed' },
-    { title: 'वर्गहरू', description: 'वर्ग विवरण हेर्नुहोस्।', screen: 'Categories', icon: 'view-grid' },
-    { title: 'अर्डरहरू', description: 'अर्डर इतिहास हेर्नुहोस्।', screen: 'Orders', icon: 'cart' },
-    { title: 'कुराकानीहरू', description: 'सोधपुछका कुराहरू।', screen: 'Conversations', icon: 'chat-processing' },
-    { title: 'खाता', description: 'प्रोफाइल र लग आउट गर्नुहोस्।', screen: 'Account', icon: 'account-circle' },
+    { title: t('home.products'), description: t('home.manage_stock'), screen: 'Products', icon: 'package-variant-closed', color: theme.colors.primary },
+    { title: t('home.categories'), description: t('home.view_category'), screen: 'Categories', icon: 'view-grid', color: '#10B981' },
+    { title: t('home.orders'), description: t('home.view_orders'), screen: 'Orders', icon: 'cart', color: '#F59E0B' },
+    { title: t('home.conversations'), description: t('home.inquiry_chat'), screen: 'Conversations', icon: 'chat-processing', color: '#6366F1' },
+    { title: t('home.account'), description: t('account.title'), screen: 'Account', icon: 'account-circle', color: '#EC4899' },
   ];
 
   const renderShimmer = () => (
-    <View style={{ paddingHorizontal: 16 }}>
+    <View style={{ paddingHorizontal: 20 }}>
       <View style={styles.statsContainer}>
         <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
           <ShimmerPlaceholder width={40} height={40} borderRadius={12} />
@@ -75,7 +75,7 @@ export default function HomeScreen() {
       <ShimmerPlaceholder width="40%" height={24} style={{ marginTop: 32, marginBottom: 16 }} />
       <View style={styles.grid}>
         {[1, 2, 3, 4].map(i => (
-          <Surface key={i} elevation={1} style={[styles.cardSurface, { width: '47%', marginBottom: 12, backgroundColor: theme.colors.surface }]}>
+          <Surface key={i} elevation={1} style={[styles.cardSurface, { width: '47.5%', marginBottom: 16, backgroundColor: theme.colors.surface }]}>
             <ShimmerPlaceholder width={48} height={48} borderRadius={14} style={{ marginBottom: 16 }} />
             <ShimmerPlaceholder width="70%" height={16} style={{ marginBottom: 8 }} />
             <ShimmerPlaceholder width="90%" height={12} />
@@ -88,7 +88,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <AppHeader
-        title="ड्यासबोर्ड"
+        title={t('home.dashboard')}
         onMenu={() => navigation.openDrawer()}
       />
 
@@ -96,74 +96,82 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }
       >
         <View style={styles.welcomeSection}>
           <View>
             <Text variant="headlineSmall" style={[styles.welcomeText, { color: theme.colors.onSurface }]}>
-              नमस्ते, {user?.name || 'User'}!
+              {t('home.hello')}, {user?.name?.split(' ')[0] || 'User'}!
             </Text>
-            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              आजको प्रगति हेर्नुहोस्।
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, fontWeight: '500' }}>
+              {t('home.today_progress')}
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => navigation.navigate('Notifications')}
-            style={[styles.bellBtn, { backgroundColor: theme.colors.surfaceVariant }]}
+            style={[styles.bellBtn, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline, borderWidth: 1 }]}
           >
             <Icon name="bell-outline" size={24} color={theme.colors.primary} />
+            <View style={[styles.badge, { backgroundColor: theme.colors.error }]} />
           </TouchableOpacity>
         </View>
 
         {isLoading ? renderShimmer() : (
           <>
             <View style={styles.statsContainer}>
-              <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, borderLeftWidth: 4, borderLeftColor: theme.colors.primary }]}>
-                <View style={[styles.statIconBox, { backgroundColor: theme.colors.primary + '1A' }]}>
-                  <Icon name="shopping" size={24} color={theme.colors.primary} />
+              <Surface elevation={2} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+                <View style={[styles.statIconBox, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Icon name="shopping" size={22} color={theme.colors.primary} />
                 </View>
                 <View style={styles.statInfo}>
-                  <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>आजको अर्डर</Text>
+                  <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>{t('home.today_orders')}</Text>
                   <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>{totalOrders}</Text>
                 </View>
               </Surface>
 
-              <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, borderLeftWidth: 4, borderLeftColor: theme.colors.secondary }]}>
-                <View style={[styles.statIconBox, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
-                  <Icon name="currency-inr" size={24} color={theme.colors.secondary} />
+              <Surface elevation={2} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+                <View style={[styles.statIconBox, { backgroundColor: '#10B98115' }]}>
+                  <Icon name="currency-inr" size={22} color="#10B981" />
                 </View>
                 <View style={styles.statInfo}>
-                  <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>कुल बिक्री</Text>
+                  <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>{t('home.total_sales')}</Text>
                   <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>₹{totalSales.toLocaleString()}</Text>
                 </View>
               </Surface>
             </View>
 
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '900', marginTop: 32, marginBottom: 16, paddingHorizontal: 20 }}>
-              द्रुत मेनु
-            </Text>
+            <View style={styles.sectionHeader}>
+              <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '900' }}>
+                {t('home.quick_menu')}
+              </Text>
+            </View>
 
             <View style={styles.grid}>
               {navItems.map((item) => (
-                <TouchableRipple
+                <Surface
                   key={item.screen}
-                  onPress={() => navigation.navigate(item.screen)}
-                  style={styles.cardRipple}
-                  rippleColor={theme.colors.primary + '1A'}
+                  elevation={1}
+                  style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}
                 >
-                  <Surface elevation={1} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
-                    <View style={[styles.iconBox, { backgroundColor: theme.colors.surfaceVariant }]}>
-                      <Icon name={item.icon as any} size={28} color={theme.colors.primary} />
+                  <TouchableRipple
+                    onPress={() => navigation.navigate(item.screen)}
+                    style={styles.cardRipple}
+                    rippleColor={item.color + '1A'}
+                  >
+                    <View style={styles.cardInner}>
+                      <View style={[styles.iconBox, { backgroundColor: item.color + '15' }]}>
+                        <Icon name={item.icon as any} size={28} color={item.color} />
+                      </View>
+                      <Text variant="titleMedium" style={[styles.navTitle, { color: theme.colors.onSurface }]}>
+                        {item.title}
+                      </Text>
+                      <Text variant="bodySmall" numberOfLines={2} style={[styles.navDesc, { color: theme.colors.onSurfaceVariant }]}>
+                        {item.description}
+                      </Text>
                     </View>
-                    <Text variant="titleMedium" style={[styles.navTitle, { color: theme.colors.onSurface }]}>
-                      {item.title}
-                    </Text>
-                    <Text variant="bodySmall" style={[styles.navDesc, { color: theme.colors.onSurfaceVariant }]}>
-                      {item.description}
-                    </Text>
-                  </Surface>
-                </TouchableRipple>
+                  </TouchableRipple>
+                </Surface>
               ))}
             </View>
           </>
@@ -180,31 +188,34 @@ const styles = StyleSheet.create({
   },
   welcomeSection: {
     paddingHorizontal: 20,
-    paddingVertical: 24,
+    paddingTop: 24,
+    paddingBottom: 28,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   welcomeText: {
     fontWeight: '900',
-    fontSize: 24,
+    fontSize: 26,
+    letterSpacing: -0.5,
   },
   bellBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  infoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  infoText: {
-    color: '#94A3B8',
-    fontWeight: '600',
+  badge: {
+    position: 'absolute',
+    top: 14,
+    right: 14,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: '#fff',
   },
   scrollContent: {
     paddingBottom: 40,
@@ -212,23 +223,21 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 16,
+    gap: 12,
     paddingHorizontal: 20,
   },
   statCard: {
     flex: 1,
-    padding: 12,
-    borderRadius: 20,
+    padding: 16,
+    borderRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.05)',
   },
   statIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -237,14 +246,22 @@ const styles = StyleSheet.create({
   },
   statTitle: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 2,
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   statValue: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 36,
+    marginBottom: 18,
+    paddingHorizontal: 22,
   },
   grid: {
     flexDirection: 'row',
@@ -253,33 +270,37 @@ const styles = StyleSheet.create({
     gap: 16,
     paddingHorizontal: 20,
   },
-  cardRipple: {
+  cardSurface: {
     width: '47.5%',
-    borderRadius: 24,
+    borderRadius: 28,
     overflow: 'hidden',
     marginBottom: 16,
   },
-  cardSurface: {
-    padding: 24,
-    borderRadius: 24,
-    minHeight: 170,
-    justifyContent: 'center',
+  cardRipple: {
+    flex: 1,
+  },
+  cardInner: {
+    padding: 20,
+    minHeight: 180,
   },
   iconBox: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   navTitle: {
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 17,
+    letterSpacing: -0.3,
   },
   navDesc: {
-    marginTop: 4,
-    fontSize: 11,
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 16,
     fontWeight: '500',
+    opacity: 0.8,
   },
 });

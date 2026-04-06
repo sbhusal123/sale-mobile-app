@@ -1,23 +1,25 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, TextInput, Button, useTheme, Surface } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import AppHeader from '../../components/AppHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/auth-context';
+import { useTranslation } from 'react-i18next';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Icon = MaterialCommunityIcons as any;
-import BackButton from '../../components/BackButton';
 
 export default function CategoryDetailScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  
+
   const { categories, addCategory, editCategory, deleteCategory } = useAuth();
-  
+
   const isNew = id === 'new';
   const existingCategory = !isNew ? categories.find(c => c.id === Number(id)) : null;
 
@@ -32,105 +34,173 @@ export default function CategoryDetailScreen() {
 
   const handleSave = async () => {
     if (!title) {
-      Alert.alert('त्रुटि', 'वर्गको नाम अनिवार्य छ।');
+      Alert.alert(t('common.error'), (t('category_detail.name') || 'Name') + ' ' + (t('common.required') || 'is required'));
       return;
     }
-    const data = { title, description };
+
+    const categoryData = {
+      title,
+      description,
+    };
 
     let success = false;
     if (isNew) {
-      success = await addCategory(data);
+      success = await addCategory(categoryData);
     } else {
-      success = await editCategory(Number(id), data);
+      success = await editCategory(Number(id), categoryData);
     }
 
     if (success) {
       navigation.goBack();
     } else {
-      Alert.alert('त्रुटि', 'वर्ग सुरक्षित गर्न सकिएन');
+      Alert.alert(t('common.error'), t('common.error'));
     }
   };
 
   const handleDelete = () => {
-    Alert.alert('मेटाउन निश्चित हुनुहुन्छ?', 'के तपाईं यो वर्ग हटाउन चाहनुहुन्छ?', [
-      { text: 'रद्द गर्नुहोस्', style: 'cancel' },
-      { text: 'हटाउनुहोस्', style: 'destructive', onPress: async () => {
-        const success = await deleteCategory(Number(id));
-        if (success) navigation.goBack();
-      }}
+    Alert.alert(t('category_detail.delete_confirm'), t('common.confirm_delete'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
+          const success = await deleteCategory(Number(id));
+          if (success) navigation.goBack();
+        }
+      }
     ]);
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={{ flex: 1, backgroundColor: theme.colors.background }} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 64 + insets.bottom }]}>
-        <BackButton />
-        <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.headerRow}>
-            <Icon name="view-grid-plus" size={32} color={theme.colors.onSurface} />
-            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
-              {isNew ? 'नयाँ वर्ग थप्नुहोस्' : 'वर्ग सम्पादन गर्नुहोस्'}
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <AppHeader 
+        title={isNew ? t('category_detail.add_title') : t('category_detail.title')} 
+        showBack 
+        onBack={() => navigation.goBack()} 
+      />
+      
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerIcon}>
+            <Surface elevation={0} style={[styles.iconSurface, { backgroundColor: theme.colors.primary + '15' }]}>
+              <Icon name="tag-plus-outline" size={48} color={theme.colors.primary} />
+            </Surface>
+            <Text variant="headlineSmall" style={[styles.titleText, { color: theme.colors.onSurface }]}>
+              {isNew ? t('categories.add_new') || 'Add Category' : t('categories.edit') || 'Edit Category'}
             </Text>
           </View>
-          
-          <TextInput
-            label="नाम"
-            value={title}
-            onChangeText={setTitle}
-            mode="outlined"
-            style={styles.input}
-          />
-          <TextInput
-            label="विवरण"
-            value={description}
-            onChangeText={setDescription}
-            mode="outlined"
-            multiline
-            numberOfLines={3}
-            style={styles.input}
-          />
 
-          <View style={styles.actions}>
-            <Button 
-              mode="contained" 
-              onPress={handleSave} 
-              style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
-              contentStyle={styles.btnContent}
-              labelStyle={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }} 
-            >
-              सुरक्षित गर्नुहोस्
-            </Button>
+          <Surface elevation={2} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+            <View style={styles.inputGap}>
+              <TextInput
+                label={t('category_detail.name')}
+                value={title}
+                onChangeText={setTitle}
+                mode="outlined"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="tag-text-outline" color={theme.colors.primary} />}
+              />
 
-            {!isNew && (
-              <Button 
-                mode="outlined" 
-                onPress={handleDelete} 
-                style={styles.deleteBtn}
+              <TextInput
+                label={t('category_detail.description')}
+                value={description}
+                onChangeText={setDescription}
+                mode="outlined"
+                multiline
+                numberOfLines={5}
+                style={[styles.input, { minHeight: 140 }]}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="text-subject" color={theme.colors.primary} />}
+              />
+            </View>
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                onPress={handleSave}
+                style={styles.saveBtn}
                 contentStyle={styles.btnContent}
-                labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
-                textColor={theme.colors.error}
+                labelStyle={styles.btnLabel}
+                elevation={4}
               >
-                हटाउनुहोस् (Delete)
+                {t('common.save')}
               </Button>
-            )}
-          </View>
-        </Surface>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+              {!isNew && (
+                <Button
+                  mode="outlined"
+                  onPress={handleDelete}
+                  style={styles.deleteBtn}
+                  contentStyle={styles.btnContent}
+                  labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
+                  textColor={theme.colors.error}
+                >
+                  {t('common.delete')}
+                </Button>
+              )}
+            </View>
+          </Surface>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 32 },
-  card: { padding: 24, borderRadius: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-  input: { marginBottom: 16, backgroundColor: 'transparent' },
-  actions: { marginTop: 24, gap: 16 },
-  saveBtn: { borderRadius: 12 },
-  deleteBtn: { borderRadius: 12, borderColor: '#ef4444' },
-  btnContent: { paddingVertical: 6 },
-  btnLabel: { fontSize: 16, fontWeight: 'bold' },
+  container: { flex: 1 },
+  scrollContent: {
+    padding: 24,
+  },
+  headerIcon: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  iconSurface: {
+    width: 90,
+    height: 90,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    transform: [{ rotate: '-4deg' }],
+  },
+  titleText: {
+    fontWeight: '900',
+    letterSpacing: -0.5,
+  },
+  formCard: {
+    padding: 24,
+    borderRadius: 32,
+  },
+  inputGap: {
+    gap: 16,
+  },
+  input: {
+    backgroundColor: 'transparent',
+  },
+  actions: {
+    marginTop: 32,
+    gap: 12,
+  },
+  saveBtn: {
+    borderRadius: 20,
+  },
+  deleteBtn: {
+    borderRadius: 20,
+    marginTop: 4,
+  },
+  btnContent: {
+    paddingVertical: 10,
+  },
+  btnLabel: {
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
 });

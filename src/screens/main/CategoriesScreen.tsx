@@ -1,16 +1,18 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { FAB, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/auth-context';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function CategoriesScreen() {
+  const { t } = useTranslation();
   const { categories, fetchCategories } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
@@ -51,9 +53,12 @@ export default function CategoriesScreen() {
   const renderShimmer = () => (
     <View style={styles.list}>
       {[1, 2, 3, 4, 5].map((i) => (
-        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: 'transparent', opacity: 0.5, height: 80 }]}>
-          <ShimmerPlaceholder width="60%" height={24} style={{ marginBottom: 8 }} />
-          <ShimmerPlaceholder width="90%" height={16} />
+        <View key={i} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+          <ShimmerPlaceholder width={52} height={52} borderRadius={16} />
+          <View style={styles.cardInfo}>
+            <ShimmerPlaceholder width="50%" height={20} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="80%" height={14} />
+          </View>
         </View>
       ))}
     </View>
@@ -62,18 +67,18 @@ export default function CategoriesScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <AppHeader 
-        title="वर्गहरू" 
+        title={t('categories.title')} 
         onMenu={() => navigation.openDrawer()} 
       />
       
-      <View style={styles.searchContainer}>
+      <View style={styles.headerControls}>
         <Searchbar
-          placeholder="वर्ग खोज्नुहोस्..."
+          placeholder={t('categories.search_placeholder')}
           onChangeText={handleSearchChange}
           value={searchQuery}
-          style={[styles.searchBar, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}
+          style={[styles.searchBar, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}
           inputStyle={[styles.searchInput, { color: theme.colors.onSurface }]}
-          elevation={0}
+          elevation={2}
           iconColor={theme.colors.primary}
           placeholderTextColor={theme.colors.onSurfaceVariant}
         />
@@ -86,39 +91,46 @@ export default function CategoriesScreen() {
           contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
           }
           renderItem={({ item }) => (
-            <TouchableRipple
-              onPress={() => navigation.navigate('CategoryDetail', { id: item.id })}
-              style={styles.cardWrapper}
-              rippleColor={theme.colors.primary + '1A'}
-            >
-              <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
-                <View style={styles.cardInfo}>
-                  <Text variant="titleMedium" style={[styles.categoryTitle, { color: theme.colors.onSurface }]}>
-                    {item.title}
-                  </Text>
-                  <Text variant="bodySmall" style={[styles.categoryDesc, { color: theme.colors.onSurfaceVariant }]} numberOfLines={2}>
-                    {item.description}
-                  </Text>
+            <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+              <TouchableRipple
+                onPress={() => navigation.navigate('CategoryDetail', { id: item.id })}
+                style={styles.cardRipple}
+                rippleColor={theme.colors.primary + '1A'}
+              >
+                <View style={styles.cardContent}>
+                  <View style={[styles.iconBox, { backgroundColor: theme.colors.primary + '15' }]}>
+                    <Icon name="tag-outline" size={26} color={theme.colors.primary} />
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text variant="titleMedium" style={[styles.categoryTitle, { color: theme.colors.onSurface }]}>
+                      {item.title}
+                    </Text>
+                    <Text variant="bodySmall" style={[styles.categoryDesc, { color: theme.colors.onSurfaceVariant }]} numberOfLines={2}>
+                      {item.description || t('categories.no_description') || 'No description provided.'}
+                    </Text>
+                  </View>
+                  <IconButton
+                    icon="chevron-right"
+                    size={22}
+                    iconColor={theme.colors.primary}
+                    style={styles.arrowBtn}
+                  />
                 </View>
-                <IconButton
-                  icon="chevron-right"
-                  size={24}
-                  iconColor={theme.colors.primary}
-                />
-              </Surface>
-            </TouchableRipple>
+              </TouchableRipple>
+            </Surface>
           )}
         />
       )}
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 48 + insets.bottom }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 32 + insets.bottom }]}
         onPress={() => navigation.navigate('CategoryDetail', { id: 'new' })}
-        color="#fff"
+        color="#FFFFFF"
+        label={t('common.add') || 'Add'}
       />
     </View>
   );
@@ -126,49 +138,43 @@ export default function CategoriesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  searchContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 20
-  },
-  headerTitleContainer: {
-    marginLeft: 12,
-  },
-  headerTitle: {
-    fontWeight: '900',
-    color: '#3B82F6',
-    fontSize: 22,
-  },
-  headerSubtitle: {
-    color: '#94A3B8',
-    opacity: 0.5,
-    marginTop: -2,
+  headerControls: {
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   searchBar: {
-    borderRadius: 14,
-    height: 48,
-    borderWidth: 1,
+    marginHorizontal: 20,
+    borderRadius: 18,
+    height: 52,
+    borderWidth: 1.5,
+    marginBottom: 12,
   },
   searchInput: {
-    fontSize: 14,
-    minHeight: 48,
+    fontSize: 15,
+    minHeight: 52,
+    fontWeight: '500',
   },
-  list: { paddingHorizontal: 16, gap: 16, paddingBottom: 100 },
-  cardWrapper: {
-    borderRadius: 20,
+  list: { paddingHorizontal: 20, paddingTop: 8, gap: 18 },
+  cardSurface: {
+    borderRadius: 24,
     overflow: 'hidden',
+    marginBottom: 18,
   },
-  card: {
-    borderRadius: 20,
-    padding: 20,
+  cardRipple: {
+    width: '100%',
+  },
+  cardContent: {
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    gap: 16,
+  },
+  iconBox: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   cardInfo: {
     flex: 1,
@@ -176,16 +182,30 @@ const styles = StyleSheet.create({
   categoryTitle: {
     fontWeight: '900',
     fontSize: 18,
+    letterSpacing: -0.4,
+    marginBottom: 4,
   },
   categoryDesc: {
-    marginTop: 4,
     lineHeight: 18,
-    fontWeight: '500',
+    fontWeight: '600',
+    opacity: 0.8,
+  },
+  arrowBtn: {
+    margin: 0,
+    opacity: 0.6,
   },
   fab: {
     position: 'absolute',
     right: 24,
-    bottom: 48,
     borderRadius: 20,
+    elevation: 6,
+  },
+  card: { // For Shimmer matching
+    borderRadius: 24,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 18,
   },
 });

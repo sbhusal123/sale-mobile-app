@@ -2,17 +2,19 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Button, Menu, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Menu, Surface, Text, TextInput, useTheme, IconButton } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import AppHeader from '../../components/AppHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getImageUri } from '../../utils/url';
 import { useAuth } from '../../context/auth-context';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function ProductDetailScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
@@ -50,7 +52,7 @@ export default function ProductDetailScreen() {
 
     if (result.didCancel) return;
     if (result.errorCode) {
-      Alert.alert('त्रुटि', result.errorMessage || 'तस्बिर चयन गर्न सकिएन');
+      Alert.alert(t('common.error'), result.errorMessage || t('common.error'));
       return;
     }
 
@@ -61,11 +63,11 @@ export default function ProductDetailScreen() {
 
   const handleSave = async () => {
     if (!name) {
-      Alert.alert('त्रुटि', 'उत्पादनको नाम अनिवार्य छ।');
+      Alert.alert(t('common.error'), t('product_detail.name') + ' ' + t('common.error'));
       return;
     }
     if (!categoryId) {
-      Alert.alert('त्रुटि', 'कृपया वर्ग चयन गर्नुहोस्');
+      Alert.alert(t('common.error'), t('product_detail.select_category'));
       return;
     }
 
@@ -91,15 +93,15 @@ export default function ProductDetailScreen() {
     if (success) {
       navigation.goBack();
     } else {
-      Alert.alert('त्रुटि', 'उत्पादन सुरक्षित गर्न सकिएन');
+      Alert.alert(t('common.error'), t('common.error'));
     }
   };
 
   const handleDelete = () => {
-    Alert.alert('मेटाउन निश्चित हुनुहुन्छ?', 'के तपाईं यो उत्पादन स्थायी रूपमा हटाउन चाहनुहुन्छ?', [
-      { text: 'रद्द गर्नुहोस्', style: 'cancel' },
+    Alert.alert(t('product_detail.delete_confirm'), t('common.confirm_delete'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'हटाउनुहोस्', style: 'destructive', onPress: async () => {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
           const success = await deleteProduct(Number(id));
           if (success) navigation.goBack();
         }
@@ -108,230 +110,262 @@ export default function ProductDetailScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <AppHeader 
-        title={isNew ? 'नयाँ उत्पादन' : 'सम्पादन गर्नुहोस्'} 
+        title={isNew ? t('product_detail.add_title') : t('product_detail.title')} 
         showBack 
         onBack={() => navigation.goBack()} 
       />
       
-      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}>
-        <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
-
-          <TextInput
-            label="उत्पादनको नाम"
-            value={name}
-            onChangeText={setName}
-            mode="outlined"
-            style={styles.input}
-          />
-
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setMenuVisible(true)}
-                style={styles.input}
-                contentStyle={{ justifyContent: 'space-between', flexDirection: 'row-reverse', height: 56 }}
-                icon="chevron-down"
-              >
-                {selectedCategory ? selectedCategory.title : 'वर्ग चयन गर्नुहोस्'}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }}
-          >
-            {categories.map((c) => (
-              <Menu.Item
-                key={c.id}
-                onPress={() => {
-                  setCategoryId(c.id);
-                  setMenuVisible(false);
-                }}
-                title={c.title}
-              />
-            ))}
-          </Menu>
-
-          <TextInput
-            label="मूल्य"
-            value={price}
-            onChangeText={setPrice}
-            keyboardType="decimal-pad"
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Affix text="₹ " />}
-          />
-          <TextInput
-            label="स्टक मात्रा"
-            value={quantity}
-            onChangeText={setQuantity}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-          />
-          <TextInput
-            label="विवरण"
-            value={description}
-            onChangeText={setDescription}
-            mode="outlined"
-            multiline
-            numberOfLines={3}
-            style={styles.input}
-          />
-          <View style={styles.imagePickerSection}>
-            <Text variant="labelLarge" style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>उत्पादनको छवि</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.imageSection}>
             {image ? (
-              <View style={[styles.imagePreviewContainer, { borderColor: theme.colors.outline }]}>
-                <TouchableOpacity onPress={() => setViewerVisible(true)} style={{ flex: 1 }}>
-                  <Image source={{ uri: getImageUri(image) || '' }} style={styles.previewImage} resizeMode="cover" />
+              <View style={[styles.imageCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+                <TouchableOpacity onPress={() => setViewerVisible(true)} style={styles.imageTouch}>
+                  <Image source={{ uri: getImageUri(image) || '' }} style={styles.heroImage} resizeMode="cover" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handlePickImage} style={styles.changeImageOverlay}>
-                  <Icon name="camera-reverse" size={20} color="#fff" />
-                  <Text style={styles.changeImageText}>तस्बिर परिवर्तन गर्नुहोस्</Text>
+                <TouchableOpacity 
+                  onPress={handlePickImage} 
+                  style={[styles.cameraFloat, { backgroundColor: theme.colors.primary }]}
+                >
+                  <Icon name="camera" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity 
                 onPress={handlePickImage} 
-                style={[styles.pickImageBtn, { backgroundColor: theme.colors.surfaceVariant, borderColor: theme.colors.outline }]}
+                style={[styles.pickImageBtn, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}
               >
-                <View style={[styles.pickImageIconContainer, { backgroundColor: theme.colors.surface }]}>
-                  <Icon name="camera-plus" size={32} color={theme.colors.primary} />
+                <View style={[styles.pickImageIconContainer, { backgroundColor: theme.colors.primary + '15' }]}>
+                  <Icon name="camera-plus-outline" size={32} color={theme.colors.primary} />
                 </View>
                 <Text variant="labelLarge" style={{ color: theme.colors.primary, marginTop: 12, fontWeight: '900' }}>
-                  तस्बिर चयन गर्नुहोस्
+                  {t('common.add') || 'Add Image'}
                 </Text>
               </TouchableOpacity>
             )}
           </View>
 
-          <View style={styles.actions}>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={styles.saveBtn}
-              contentStyle={styles.btnContent}
-              labelStyle={styles.btnLabel}
-              buttonColor={theme.colors.primary}
-              textColor="#fff"
-            >
-              सुरक्षित गर्नुहोस्
-            </Button>
-
-            {!isNew && (
-              <Button
+          <Surface elevation={2} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+            <View style={styles.inputGap}>
+              <TextInput
+                label={t('product_detail.name')}
+                value={name}
+                onChangeText={setName}
                 mode="outlined"
-                onPress={handleDelete}
-                style={styles.deleteBtn}
-                contentStyle={styles.btnContent}
-                labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
-                textColor={theme.colors.error}
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="package-variant-closed" color={theme.colors.primary} />}
+              />
+
+              <Menu
+                visible={menuVisible}
+                onDismiss={() => setMenuVisible(false)}
+                anchor={
+                  <TouchableOpacity 
+                    onPress={() => setMenuVisible(true)}
+                    style={[styles.menuAnchor, { borderColor: theme.colors.outline, borderWidth: 1 }]}
+                  >
+                    <View style={styles.menuAnchorLeft}>
+                      <Icon name="tag-outline" size={24} color={theme.colors.primary} style={{ marginRight: 12 }} />
+                      <Text style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
+                        {selectedCategory ? selectedCategory.title : t('product_detail.select_category')}
+                      </Text>
+                    </View>
+                    <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+                  </TouchableOpacity>
+                }
+                contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: 18 }}
               >
-                हटाउनुहोस्
+                {categories.map((c) => (
+                  <Menu.Item
+                    key={c.id}
+                    onPress={() => {
+                      setCategoryId(c.id);
+                      setMenuVisible(false);
+                    }}
+                    title={c.title}
+                  />
+                ))}
+              </Menu>
+
+              <View style={styles.rowInputs}>
+                <TextInput
+                  label={t('product_detail.price')}
+                  value={price}
+                  onChangeText={setPrice}
+                  keyboardType="decimal-pad"
+                  mode="outlined"
+                  style={[styles.input, { flex: 1 }]}
+                  outlineStyle={{ borderRadius: 18 }}
+                  left={<TextInput.Affix text="₹ " />}
+                />
+                <TextInput
+                  label={t('product_detail.quantity')}
+                  value={quantity}
+                  onChangeText={setQuantity}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={[styles.input, { flex: 1 }]}
+                  outlineStyle={{ borderRadius: 18 }}
+                  left={<TextInput.Icon icon="counter" color={theme.colors.primary} />}
+                />
+              </View>
+
+              <TextInput
+                label={t('product_detail.description')}
+                value={description}
+                onChangeText={setDescription}
+                mode="outlined"
+                multiline
+                numberOfLines={4}
+                style={[styles.input, { minHeight: 120 }]}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="text-subject" color={theme.colors.primary} />}
+              />
+            </View>
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                onPress={handleSave}
+                style={styles.saveBtn}
+                contentStyle={styles.btnContent}
+                labelStyle={styles.btnLabel}
+                elevation={4}
+              >
+                {t('common.save')}
               </Button>
-            )}
-          </View>
-        </Surface>
-      </ScrollView>
+
+              {!isNew && (
+                <Button
+                  mode="outlined"
+                  onPress={handleDelete}
+                  style={styles.deleteBtn}
+                  contentStyle={styles.btnContent}
+                  labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
+                  textColor={theme.colors.error}
+                >
+                  {t('common.delete')}
+                </Button>
+              )}
+            </View>
+          </Surface>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
       <ImageViewer
         visible={viewerVisible}
         imageUri={getImageUri(image)}
         onClose={() => setViewerVisible(false)}
       />
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   scrollContent: {
-    padding: 20,
+    padding: 24,
   },
-  card: {
-    padding: 20,
-    borderRadius: 24,
-    borderWidth: 1,
+  imageSection: {
+    marginBottom: 28,
   },
-  input: {
-    marginBottom: 16,
-    backgroundColor: 'transparent',
-  },
-  actions: {
-    marginTop: 24,
-    gap: 16,
-  },
-  saveBtn: {
-    borderRadius: 14,
+  imageCard: {
+    height: 240,
+    borderRadius: 32,
+    overflow: 'hidden',
+    position: 'relative',
     elevation: 4,
   },
-  deleteBtn: {
-    borderRadius: 14,
-    marginTop: 8,
+  imageTouch: {
+    width: '100%',
+    height: '100%',
   },
-  btnContent: {
-    paddingVertical: 6,
+  heroImage: {
+    width: '100%',
+    height: '100%',
   },
-  btnLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  imagePickerSection: {
-    marginBottom: 20,
-  },
-  label: {
-    marginBottom: 8,
-    opacity: 0.7,
+  cameraFloat: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    borderWidth: 3,
+    borderColor: '#fff',
   },
   pickImageBtn: {
-    height: 160,
-    borderRadius: 20,
-    borderWidth: 1.5,
+    height: 180,
+    borderRadius: 32,
+    borderWidth: 2,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
   },
   pickImageIconContainer: {
-    width: 64,
-    height: 64,
+    width: 68,
+    height: 68,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  formCard: {
+    padding: 24,
     borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  imagePreviewContainer: {
-    height: 220,
-    borderRadius: 20,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
+  inputGap: {
+    gap: 16,
   },
-  previewImage: {
-    width: '100%',
-    height: '100%',
+  input: {
+    backgroundColor: 'transparent',
   },
-  changeImageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 10,
+  menuAnchor: {
+    height: 56,
+    borderRadius: 18,
     flexDirection: 'row',
-    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent',
   },
-  changeImageText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+  menuAnchorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowInputs: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  actions: {
+    marginTop: 32,
+    gap: 12,
+  },
+  saveBtn: {
+    borderRadius: 20,
+  },
+  deleteBtn: {
+    borderRadius: 20,
+    marginTop: 4,
+  },
+  btnContent: {
+    paddingVertical: 10,
+  },
+  btnLabel: {
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
 });

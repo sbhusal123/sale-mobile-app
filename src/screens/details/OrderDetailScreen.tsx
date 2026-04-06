@@ -1,15 +1,17 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Menu, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { Button, Menu, Surface, Text, TextInput, useTheme, Divider } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BackButton from '../../components/BackButton';
+import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/auth-context';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function OrderDetailScreen() {
+  const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
@@ -27,9 +29,9 @@ export default function OrderDetailScreen() {
   const [location, setLocation] = useState(existingOrder?.location || '');
   const [phone, setPhone] = useState(existingOrder?.phone || '');
   const [specialInstructions, setSpecialInstructions] = useState(existingOrder?.special_instructions || '');
-  const [orderStatus, setOrderStatus] = useState(existingOrder?.order_status || 'Pending');
+  const [orderStatus, setOrderStatus] = useState(existingOrder?.order_status || 'PENDING');
 
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [productMenuVisible, setProductMenuVisible] = useState(false);
 
   useEffect(() => {
     if (!isNew && !existingOrder) {
@@ -41,7 +43,7 @@ export default function OrderDetailScreen() {
 
   const handleSave = async () => {
     if (!productId) {
-      Alert.alert('त्रुटि', 'कृपया उत्पादन चयन गर्नुहोस्');
+      Alert.alert(t('common.error'), (t('order_detail.product') || 'Product') + ' ' + (t('common.required') || 'is required'));
       return;
     }
 
@@ -67,15 +69,15 @@ export default function OrderDetailScreen() {
     if (success) {
       navigation.goBack();
     } else {
-      Alert.alert('त्रुटि', 'अर्डर सुरक्षित गर्न सकिएन');
+      Alert.alert(t('common.error'), t('common.error'));
     }
   };
 
   const handleDelete = () => {
-    Alert.alert('मेटाउन निश्चित हुनुहुन्छ?', 'के तपाईं यो अर्डर हटाउन चाहनुहुन्छ?', [
-      { text: 'रद्द गर्नुहोस्', style: 'cancel' },
+    Alert.alert(t('order_detail.delete_confirm'), t('common.confirm_delete'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'हटाउनुहोस्', style: 'destructive', onPress: async () => {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
           const success = await deleteOrder(Number(id));
           if (success) navigation.goBack();
         }
@@ -83,191 +85,368 @@ export default function OrderDetailScreen() {
     ]);
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status?.toUpperCase()) {
+      case 'COMPLETED': return '#10B981';
+      case 'DELIVERING': return '#6366F1';
+      case 'CANCELLED': return '#EF4444';
+      default: return '#F59E0B';
+    }
+  };
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: theme.colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 64 + insets.bottom }]}>
-        <BackButton />
-        <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.headerRow}>
-            <Icon name="cart-plus" size={32} color={theme.colors.onSurface} />
-            <Text variant="headlineMedium" style={{ color: theme.colors.onBackground, fontWeight: 'bold' }}>
-              {isNew ? 'नयाँ अर्डर थप्नुहोस्' : 'अर्डर सम्पादन गर्नुहोस्'}
-            </Text>
-          </View>
-
-          <Menu
-            visible={menuVisible}
-            onDismiss={() => setMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setMenuVisible(true)}
-                style={styles.input}
-                contentStyle={{ justifyContent: 'space-between', flexDirection: 'row-reverse', height: 56 }}
-                icon="chevron-down"
-              >
-                {selectedProduct ? selectedProduct.name : 'उत्पादन चयन गर्नुहोस्'}
-              </Button>
-            }
-            contentStyle={{ backgroundColor: theme.colors.surface }}
-          >
-            {products.map((p) => (
-              <Menu.Item
-                key={p.id}
-                onPress={() => {
-                  setProductId(p.id);
-                  setMenuVisible(false);
-                }}
-                title={p.name}
-              />
-            ))}
-          </Menu>
-
-          <TextInput
-            label="मात्रा"
-            value={qty}
-            onChangeText={setQty}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-          />
-          <TextInput
-            label="कुल मूल्य"
-            value={totalPrice}
-            onChangeText={setTotalPrice}
-            keyboardType="numeric"
-            mode="outlined"
-            style={styles.input}
-            left={<TextInput.Affix text="₹ " />}
-          />
-          <TextInput
-            label="ठेगाना"
-            value={location}
-            onChangeText={setLocation}
-            mode="outlined"
-            style={styles.input}
-          />
-          <TextInput
-            label="सम्पर्क"
-            value={phone}
-            onChangeText={setPhone}
-            mode="outlined"
-            style={styles.input}
-          />
-
-          <TextInput
-            label="अर्डरको स्थिति"
-            value={orderStatus}
-            onChangeText={setOrderStatus}
-            mode="outlined"
-            style={styles.input}
-          />
-
-          <View style={styles.statusSection}>
-            <Text variant="labelSmall" style={styles.statusLabel}>त्वरित अनुगमन (Quick Update)</Text>
-            <View style={styles.statusButtonRow}>
-              {(['PENDING', 'DELIVERING', 'COMPLETED'] as const).map((status) => (
-                <Button
-                  key={status}
-                  mode="outlined"
-                  onPress={() => setOrderStatus(status)}
-                  style={[
-                    styles.statusButton,
-                    orderStatus === status && { backgroundColor: theme.colors.primary + '20', borderColor: theme.colors.primary }
-                  ]}
-                  labelStyle={{ fontSize: 11, fontWeight: 'bold', color: orderStatus === status ? theme.colors.primary : theme.colors.onSurfaceVariant }}
-                  compact
-                >
-                  {status === 'PENDING' ? 'प्रतीक्षारत' : status === 'DELIVERING' ? 'पठाउँदै' : 'सम्पन्न'}
-                </Button>
-              ))}
-            </View>
-          </View>
-
-          <TextInput
-            label="विशेष निर्देशनहरू"
-            value={specialInstructions}
-            onChangeText={setSpecialInstructions}
-            mode="outlined"
-            multiline
-            numberOfLines={3}
-            style={styles.input}
-          />
-
-          {!isNew && (existingOrder as any)?.user && (
-            <View style={styles.customerSection}>
-              <View style={styles.sectionHeader}>
-                <Icon name="account-circle-outline" size={24} color={theme.colors.primary} />
-                <Text variant="titleMedium" style={styles.sectionTitle}>ग्राहकको विवरण (Read-only)</Text>
-              </View>
-              <Surface elevation={1} style={[styles.customerCard, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <View style={styles.detailRow}>
-                  <Text variant="labelLarge" style={styles.detailLabel}>नाम:</Text>
-                  <Text variant="bodyLarge">{((existingOrder as any).user).name || 'उपलब्ध छैन'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text variant="labelLarge" style={styles.detailLabel}>फोन:</Text>
-                  <Text variant="bodyLarge">{((existingOrder as any).user).phone || 'उपलब्ध छैन'}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text variant="labelLarge" style={styles.detailLabel}>इमेल:</Text>
-                  <Text variant="bodyLarge">{((existingOrder as any).user).email || 'उपलब्ध छैन'}</Text>
-                </View>
-              </Surface>
-            </View>
-          )}
-
-          <View style={styles.actions}>
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              style={[styles.saveBtn, { backgroundColor: theme.colors.primary }]}
-              contentStyle={styles.btnContent}
-              labelStyle={{ color: '#fff', fontSize: 16, fontWeight: 'bold' }}
-            >
-              सुरक्षित गर्नुहोस्
-            </Button>
-
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <AppHeader 
+        title={isNew ? t('order_detail.add_title') : t('order_detail.title')} 
+        showBack 
+        onBack={() => navigation.goBack()} 
+      />
+      
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.headerIcon}>
+            <Surface elevation={0} style={[styles.iconSurface, { backgroundColor: theme.colors.primary + '15' }]}>
+              <Icon name="cart-variant" size={48} color={theme.colors.primary} />
+            </Surface>
             {!isNew && (
-              <Button
-                mode="outlined"
-                onPress={handleDelete}
-                style={styles.deleteBtn}
-                contentStyle={styles.btnContent}
-                labelStyle={[styles.btnLabel, { color: theme.colors.error }]}
-                textColor={theme.colors.error}
-              >
-                हटाउनुहोस्
-              </Button>
+              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(orderStatus) + '15' }]}>
+                <View style={[styles.statusDot, { backgroundColor: getStatusColor(orderStatus) }]} />
+                <Text variant="labelSmall" style={[styles.statusText, { color: getStatusColor(orderStatus) }]}>
+                  {orderStatus.toUpperCase()}
+                </Text>
+              </View>
             )}
           </View>
-        </Surface>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+          <Surface elevation={2} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+            <View style={styles.inputGap}>
+              <Menu
+                visible={productMenuVisible}
+                onDismiss={() => setProductMenuVisible(false)}
+                anchor={
+                  <TouchableOpacity 
+                    onPress={() => setProductMenuVisible(true)}
+                    style={[styles.menuAnchor, { borderColor: theme.colors.outline, borderWidth: 1 }]}
+                  >
+                    <View style={styles.menuAnchorLeft}>
+                      <Icon name="package-variant" size={24} color={theme.colors.primary} style={{ marginRight: 12 }} />
+                      <Text style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
+                        {selectedProduct ? selectedProduct.name : t('order_detail.product')}
+                      </Text>
+                    </View>
+                    <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+                  </TouchableOpacity>
+                }
+                contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: 18 }}
+              >
+                {products.map((p) => (
+                  <Menu.Item
+                    key={p.id}
+                    onPress={() => {
+                      setProductId(p.id);
+                      setProductMenuVisible(false);
+                    }}
+                    title={p.name}
+                  />
+                ))}
+              </Menu>
+
+              <View style={styles.rowInputs}>
+                <TextInput
+                  label={t('order_detail.quantity')}
+                  value={qty}
+                  onChangeText={setQty}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={{ flex: 1 }}
+                  outlineStyle={{ borderRadius: 18 }}
+                  left={<TextInput.Icon icon="counter" color={theme.colors.primary} />}
+                />
+                <TextInput
+                  label={t('order_detail.total_price')}
+                  value={totalPrice}
+                  onChangeText={setTotalPrice}
+                  keyboardType="numeric"
+                  mode="outlined"
+                  style={{ flex: 1.5 }}
+                  outlineStyle={{ borderRadius: 18 }}
+                  left={<TextInput.Affix text="₹ " />}
+                />
+              </View>
+
+              <TextInput
+                label={t('order_detail.location')}
+                value={location}
+                onChangeText={setLocation}
+                mode="outlined"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="map-marker-outline" color={theme.colors.primary} />}
+              />
+
+              <TextInput
+                label={t('order_detail.phone')}
+                value={phone}
+                onChangeText={setPhone}
+                mode="outlined"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="phone-outline" color={theme.colors.primary} />}
+              />
+
+              <View style={styles.statusQuickSection}>
+                <Text variant="labelSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>{t('order_detail.quick_update')}</Text>
+                <View style={styles.statusChipsRow}>
+                  {(['PENDING', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const).map((status) => (
+                    <TouchableOpacity
+                      key={status}
+                      onPress={() => setOrderStatus(status)}
+                      style={[
+                        styles.statusChip,
+                        { borderColor: theme.colors.outline, borderWidth: 1 },
+                        orderStatus === status && { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary }
+                      ]}
+                    >
+                      <Text style={[
+                        styles.statusChipText,
+                        { color: theme.colors.onSurfaceVariant },
+                        orderStatus === status && { color: '#FFFFFF' }
+                      ]}>
+                        {status.toLowerCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              <TextInput
+                label={t('order_detail.special_instructions')}
+                value={specialInstructions}
+                onChangeText={setSpecialInstructions}
+                mode="outlined"
+                multiline
+                numberOfLines={3}
+                style={[styles.input, { minHeight: 100 }]}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="note-text-outline" color={theme.colors.primary} />}
+              />
+            </View>
+
+            {!isNew && (existingOrder as any)?.user && (
+              <View style={styles.customerCardSection}>
+                <Divider style={styles.cardDivider} />
+                <View style={styles.sectionHeader}>
+                  <Icon name="account-details-outline" size={22} color={theme.colors.primary} />
+                  <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>{t('order_detail.customer_details')}</Text>
+                </View>
+                <View style={[styles.customerInfoBox, { backgroundColor: theme.colors.primary + '08', borderRadius: 18 }]}>
+                  <View style={styles.infoRow}>
+                    <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.full_name')}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{((existingOrder as any).user).name || '---'}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('order_detail.phone')}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{((existingOrder as any).user).phone || '---'}</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.email')}</Text>
+                    <Text variant="bodyMedium" style={{ fontWeight: '600' }}>{((existingOrder as any).user).email || '---'}</Text>
+                  </View>
+                </View>
+              </View>
+            )}
+
+            <View style={styles.actions}>
+              <Button
+                mode="contained"
+                onPress={handleSave}
+                style={styles.saveBtn}
+                contentStyle={styles.btnContent}
+                labelStyle={styles.btnLabel}
+                elevation={4}
+              >
+                {t('common.save')}
+              </Button>
+
+              {!isNew && (
+                <View style={styles.bottomActions}>
+                  <Button
+                    mode="outlined"
+                    onPress={() => navigation.navigate('OrderChat', { id: item.id })}
+                    style={[styles.flexBtn, { marginRight: 8 }]}
+                    contentStyle={styles.btnContent}
+                    labelStyle={styles.flexBtnLabel}
+                    icon="chat-processing-outline"
+                  >
+                    {t('orders.chat') || 'Chat'}
+                  </Button>
+                  <Button
+                    mode="outlined"
+                    onPress={handleDelete}
+                    style={[styles.flexBtn, { borderColor: theme.colors.error }]}
+                    contentStyle={styles.btnContent}
+                    labelStyle={[styles.flexBtnLabel, { color: theme.colors.error }]}
+                    textColor={theme.colors.error}
+                    icon="delete-outline"
+                  >
+                    {t('common.delete')}
+                  </Button>
+                </View>
+              )}
+            </View>
+          </Surface>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 32 },
-  card: { padding: 24, borderRadius: 24 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
-  input: { marginBottom: 16, backgroundColor: 'transparent' },
-  actions: { marginTop: 24, gap: 16 },
-  saveBtn: { borderRadius: 12 },
-  deleteBtn: { borderRadius: 12, borderColor: '#ef4444' },
-  btnContent: { paddingVertical: 6 },
-  btnLabel: { fontSize: 16, fontWeight: 'bold' },
-  customerSection: { marginTop: 24 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionTitle: { fontWeight: 'bold', opacity: 0.8 },
-  customerCard: { padding: 16, borderRadius: 16, gap: 8 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  detailLabel: { opacity: 0.6 },
-  statusSection: { marginBottom: 20 },
-  statusLabel: { marginBottom: 8, opacity: 0.5, fontSize: 11, fontWeight: 'bold', textTransform: 'uppercase' },
-  statusButtonRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  statusButton: { borderRadius: 8, minWidth: 70 },
+  container: { flex: 1 },
+  scrollContent: {
+    padding: 24,
+  },
+  headerIcon: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  iconSurface: {
+    width: 90,
+    height: 90,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    transform: [{ rotate: '5deg' }],
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  formCard: {
+    padding: 24,
+    borderRadius: 32,
+  },
+  inputGap: {
+    gap: 16,
+  },
+  input: {
+    backgroundColor: 'transparent',
+  },
+  menuAnchor: {
+    height: 56,
+    borderRadius: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
+  menuAnchorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  rowInputs: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  statusQuickSection: {
+    marginVertical: 4,
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 12,
+  },
+  statusChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  statusChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  statusChipText: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'capitalize',
+  },
+  customerCardSection: {
+    marginTop: 24,
+  },
+  cardDivider: {
+    marginBottom: 20,
+    opacity: 0.5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontWeight: '900',
+    fontSize: 17,
+  },
+  customerInfoBox: {
+    padding: 16,
+    gap: 12,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  actions: {
+    marginTop: 32,
+    gap: 12,
+  },
+  saveBtn: {
+    borderRadius: 20,
+  },
+  bottomActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  flexBtn: {
+    flex: 1,
+    borderRadius: 18,
+  },
+  flexBtnLabel: {
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  btnContent: {
+    paddingVertical: 10,
+  },
+  btnLabel: {
+    fontSize: 17,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
 });

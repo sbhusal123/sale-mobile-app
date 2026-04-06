@@ -4,18 +4,21 @@ import { FlatList, StyleSheet, View } from 'react-native';
 import { IconButton, Surface, Text, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import BackButton from '../../components/BackButton';
+import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
-// This will be replaced by local storage/context data later
-const mockNotifications = [
-  { id: '1', title: 'नयाँ अर्डर', body: 'तपाईंको पसलमा नयाँ अर्डर आएको छ।', time: '१० मिनेट अघि' },
-  { id: '2', title: 'स्टक अलर्ट', body: 'काउलीको स्टक कम हुँदैछ।', time: '१ घण्टा अघि' },
-];
-
 export default function NotificationsScreen() {
+  const { t } = useTranslation();
   const theme = useTheme();
   const navigation = useNavigation();
+
+  // Use dynamic translations for mock data
+  const mockNotifications = [
+    { id: '1', title: t('notifications.new_order_title'), body: t('notifications.new_order_body'), time: t('chat.minutes_ago', { count: 10 }) },
+    { id: '2', title: t('notifications.stock_alert_title'), body: t('notifications.stock_alert_body'), time: t('chat.hours_ago', { count: 1 }) },
+  ];
+
   const [notifications, setNotifications] = useState(mockNotifications);
 
   const clearAll = () => {
@@ -28,7 +31,7 @@ export default function NotificationsScreen() {
         <View style={styles.headerLeft}>
           <BackButton />
           <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.colors.onBackground }]}>
-            सूचनाहरू
+            {t('notifications.title')}
           </Text>
         </View>
         <IconButton
@@ -69,7 +72,7 @@ export default function NotificationsScreen() {
         <View style={styles.emptyContainer}>
           <Icon name="bell-off-outline" size={80} color={theme.colors.onSurfaceVariant} style={{ opacity: 0.3 }} />
           <Text variant="titleLarge" style={{ color: theme.colors.onSurfaceVariant, marginTop: 16 }}>
-            कुनै नयाँ सूचना छैन
+            {t('notifications.no_notifications')}
           </Text>
         </View>
       )}

@@ -2,6 +2,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Divider, FAB, IconButton, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import AppHeader from '../../components/AppHeader';
@@ -14,6 +15,7 @@ export default function OrdersScreen() {
   const { orders, products, fetchOrders } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState((orders || []).length === 0);
@@ -65,7 +67,7 @@ export default function OrdersScreen() {
         <FlatList
           data={orders}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
@@ -122,7 +124,7 @@ export default function OrdersScreen() {
 
       <FAB
         icon="cart-plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 48 + insets.bottom }]}
         onPress={() => navigation.navigate('OrderDetail', { id: 'new' })}
         color="#fff"
       />

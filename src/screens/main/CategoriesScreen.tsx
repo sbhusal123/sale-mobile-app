@@ -2,6 +2,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { FAB, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import AppHeader from '../../components/AppHeader';
@@ -13,6 +14,7 @@ export default function CategoriesScreen() {
   const { categories, fetchCategories } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState((categories || []).length === 0);
@@ -81,7 +83,7 @@ export default function CategoriesScreen() {
         <FlatList
           data={categories}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
@@ -114,7 +116,7 @@ export default function CategoriesScreen() {
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 48 + insets.bottom }]}
         onPress={() => navigation.navigate('CategoryDetail', { id: 'new' })}
         color="#fff"
       />

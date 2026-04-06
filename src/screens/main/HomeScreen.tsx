@@ -3,6 +3,7 @@ import React, { useCallback } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
@@ -13,6 +14,7 @@ export default function HomeScreen() {
   const { user, logout, orders, fetchCategories, fetchProducts, fetchOrders, fetchConfig } = useAuth();
   const theme = useTheme();
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -91,7 +93,7 @@ export default function HomeScreen() {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />

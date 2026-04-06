@@ -2,6 +2,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { FlatList, Image, RefreshControl, StyleSheet, View } from 'react-native';
 import { Chip, FAB, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
@@ -15,6 +16,7 @@ export default function ProductsScreen() {
   const { products, fetchProducts, categories } = useAuth();
   const navigation = useNavigation<any>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [refreshing, setRefreshing] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState((products || []).length === 0);
@@ -137,7 +139,7 @@ export default function ProductsScreen() {
         <FlatList
           data={products}
           keyExtractor={(item) => String(item.id)}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 100 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
@@ -203,7 +205,7 @@ export default function ProductsScreen() {
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 48 + insets.bottom }]}
         onPress={() => navigation.navigate('ProductDetail', { id: 'new' })}
         color="#fff"
       />

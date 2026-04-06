@@ -1,4 +1,3 @@
-import messaging from '@react-native-firebase/messaging';
 import React, { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import apiClient, { setAuthCallbacks, setAuthToken } from '../api/client';
@@ -70,103 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [config, setConfig] = useState<Config | null>(null);
 
-  const lastRegisteredToken = useRef<string | null>(null);
-
-  // FCM Logic
-  const requestUserPermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
-      await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
-    }
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-      getFcmToken();
-    }
-  };
-
-  const getFcmToken = async () => {
-    try {
-      const fcmToken = await messaging().getToken();
-      if (fcmToken && fcmToken !== lastRegisteredToken.current) {
-        console.log('FCM Token:', fcmToken);
-
-        let deviceId = await storage.getItem('@device_id');
-        if (!deviceId) {
-          deviceId = `device_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
-          await storage.setItem('@device_id', deviceId);
-        }
-
-        if (user && user.accessToken) {
-          lastRegisteredToken.current = fcmToken;
-          await registerDeviceToken(fcmToken, deviceId);
-        }
-      }
-    } catch (error) {
-      console.error('Error getting FCM token:', error);
-    }
-  };
-
-  const registerDeviceToken = async (registration_id: string, device_id: string) => {
-    try {
-      await apiClient.post('notifications/register/', {
-        registration_id,
-        device_id,
-      });
-      console.log('Device registered with backend:', registration_id);
-    } catch (error: any) {
-      if (error.response?.status === 401) {
-        lastRegisteredToken.current = null; // Clear to allow retry after refresh
-      }
-      console.warn('Notification registration failed:', error.message);
-    }
-  };
-
-  useEffect(() => {
-    if (user && user.accessToken) {
-      const handleRefresh = async (token: string) => {
-        if (token === lastRegisteredToken.current) return;
-
-        let deviceId = await storage.getItem('@device_id');
-        if (!deviceId) {
-          deviceId = `device_${Math.random().toString(36).substring(2, 11)}_${Date.now()}`;
-          await storage.setItem('@device_id', deviceId);
-        }
-        lastRegisteredToken.current = token;
-        registerDeviceToken(token, deviceId);
-      };
-
-      requestUserPermission();
-
-      const unsubscribeOnMessage = messaging().onMessage(async remoteMessage => {
-        if (remoteMessage.notification) {
-          Alert.alert(
-            remoteMessage.notification.title || 'नयाँ सूचना',
-            remoteMessage.notification.body || 'तपाईंको पसलमा नयाँ अपडेट आएको छ।'
-          );
-        }
-      });
-
-      const unsubscribeAutoRefresh = messaging().onTokenRefresh(token => {
-        console.log('FCM Token refreshed:', token);
-        handleRefresh(token);
-      });
-
-      return () => {
-        unsubscribeOnMessage();
-        unsubscribeAutoRefresh();
-      };
-    }
-  }, [user]);
-
   const logout = async () => {
     try {
       setAuthToken(null);
       setUser(null);
-      lastRegisteredToken.current = null;
       await storage.removeItem(USER_STORAGE_KEY);
     } catch (error) {
       console.error('Logout error:', error);

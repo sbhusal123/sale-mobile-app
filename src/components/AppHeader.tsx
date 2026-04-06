@@ -1,10 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, TouchableOpacity, Platform, StatusBar } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Text, useTheme, IconButton } from 'react-native-paper';
 import { useThemeContext } from '../context/theme-context';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-
-const Icon = MaterialCommunityIcons as any;
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface AppHeaderProps {
   title: string;
@@ -15,14 +13,22 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu }) => {
   const theme = useTheme();
-  const { isDark, themeMode, setThemeMode } = useThemeContext();
+  const insets = useSafeAreaInsets();
+  const { isDark, setThemeMode } = useThemeContext();
 
   const toggleTheme = () => {
     setThemeMode(isDark ? 'light' : 'dark');
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface, borderBottomColor: theme.colors.outline }]}>
+    <View style={[
+      styles.container, 
+      { 
+        backgroundColor: theme.colors.surface, 
+        borderBottomColor: theme.colors.outline,
+        paddingTop: insets.top,
+      }
+    ]}>
       <View style={styles.leftSection}>
         {showBack ? (
           <IconButton
@@ -59,12 +65,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu }
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 80,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight,
     elevation: 2,
     borderBottomWidth: 0.5,
   },

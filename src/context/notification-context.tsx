@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import messaging from '@react-native-firebase/messaging';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
 import { storage } from '../utils/storage';
 
@@ -31,19 +30,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadNotifications();
     requestUserPermission();
-
-    // Foreground message listener
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      console.log('A new FCM message arrived!', JSON.stringify(remoteMessage));
-      if (remoteMessage.notification) {
-        addNotification({
-          title: remoteMessage.notification.title || 'Notification',
-          body: remoteMessage.notification.body || '',
-        });
-      }
-    });
-
-    return unsubscribe;
   }, []);
 
   const loadNotifications = async () => {
@@ -73,18 +59,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
         console.warn('Notification permission denied');
       }
-    }
-    
-    const authStatus = await messaging().requestPermission();
-    const enabled =
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-
-    if (enabled) {
-      console.log('Authorization status:', authStatus);
-      // Get token for server-side testing
-      const token = await messaging().getToken();
-      console.log('FCM Token:', token);
     }
   };
 

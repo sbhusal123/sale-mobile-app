@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } f
 import { Text, TextInput, Button, useTheme, Surface } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/auth-context';
 
 const Icon = MaterialCommunityIcons as any;
@@ -13,6 +14,7 @@ export default function CategoryDetailScreen() {
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
   
   const { categories, addCategory, editCategory, deleteCategory } = useAuth();
   
@@ -64,7 +66,7 @@ export default function CategoryDetailScreen() {
       style={{ flex: 1, backgroundColor: theme.colors.background }} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 64 + insets.bottom }]}>
         <BackButton />
         <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerRow}>
@@ -122,7 +124,7 @@ export default function CategoryDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 32, paddingBottom: 64 },
+  container: { padding: 20, paddingTop: 32 },
   card: { padding: 24, borderRadius: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
   input: { marginBottom: 16, backgroundColor: 'transparent' },

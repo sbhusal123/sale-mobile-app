@@ -279,7 +279,7 @@ export default function OrderChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      <Surface elevation={2} style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+      <Surface elevation={2} style={[styles.header, { backgroundColor: theme.colors.surface, paddingTop: insets.top }]}>
         <View style={styles.headerTop}>
           <BackButton />
           <View style={styles.headerTitleContainer}>
@@ -340,16 +340,13 @@ export default function OrderChatScreen() {
         />
       )}
 
-      <Surface
-        elevation={4}
-        style={[
-          styles.inputContainer,
-          {
-            backgroundColor: theme.colors.surface,
-            paddingBottom: insets.bottom > 0 ? insets.bottom : 12,
-          }
-        ]}
-      >
+      <View style={[
+        styles.inputContainer, 
+        { 
+          backgroundColor: theme.colors.surface,
+          paddingBottom: (Platform.OS === 'ios' ? 12 : 8) + insets.bottom,
+        }
+      ]}>
         <TextInput
           placeholder="यहाँ लेख्वनुहोस्..."
           value={message}
@@ -372,7 +369,7 @@ export default function OrderChatScreen() {
           disabled={isSending || message.trim().length === 0}
           loading={isSending}
         />
-      </Surface>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -380,7 +377,6 @@ export default function OrderChatScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: {
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderBottomLeftRadius: 30,

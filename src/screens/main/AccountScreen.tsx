@@ -6,6 +6,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import AppHeader from '../../components/AppHeader';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 const Icon = MaterialCommunityIcons as any;
@@ -14,6 +15,7 @@ export default function AccountScreen() {
   const { user, config, fetchConfig, updateConfig, logout } = useAuth();
   const theme = useTheme();
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -85,7 +87,10 @@ export default function AccountScreen() {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
         >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: 40 + insets.bottom }]} 
+          showsVerticalScrollIndicator={false}
+        >
           {/* Profile Summary */}
           <Surface elevation={1} style={[styles.profileCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
             <View style={[styles.avatarBox, { backgroundColor: theme.colors.surfaceVariant }]}>

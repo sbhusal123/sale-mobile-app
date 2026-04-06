@@ -180,7 +180,7 @@ export default function ChatSessionsScreen() {
           data={filteredSessions}
           keyExtractor={(item) => item.id}
           renderItem={renderSessionItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 40 + insets.bottom }]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[theme.colors.primary]} />
           }

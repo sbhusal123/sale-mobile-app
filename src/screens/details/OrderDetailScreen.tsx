@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Menu, Surface, Text, TextInput, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BackButton from '../../components/BackButton';
 import { useAuth } from '../../context/auth-context';
 
@@ -13,6 +14,7 @@ export default function OrderDetailScreen() {
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { orders, products, addOrder, editOrder, deleteOrder } = useAuth();
 
@@ -86,7 +88,7 @@ export default function OrderDetailScreen() {
       style={{ flex: 1, backgroundColor: theme.colors.background }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: 64 + insets.bottom }]}>
         <BackButton />
         <Surface elevation={3} style={[styles.card, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.headerRow}>
@@ -249,7 +251,7 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 20, paddingTop: 32, paddingBottom: 64 },
+  container: { padding: 20, paddingTop: 32 },
   card: { padding: 24, borderRadius: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 },
   input: { marginBottom: 16, backgroundColor: 'transparent' },

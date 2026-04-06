@@ -5,8 +5,11 @@ import { RootNavigator } from '@/navigation/RootNavigator';
 import { DarkTheme as NavDarkTheme, DefaultTheme as NavLightTheme, NavigationContainer } from '@react-navigation/native';
 import React from 'react';
 import { StatusBar } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
+
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const blueColors = {
   primary: '#3B82F6', // Vibrant Blue
@@ -85,8 +88,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <MainApp />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <MainApp />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

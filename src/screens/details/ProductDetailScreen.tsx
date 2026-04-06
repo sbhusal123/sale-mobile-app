@@ -6,6 +6,7 @@ import { Button, Menu, Surface, Text, TextInput, useTheme } from 'react-native-p
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import AppHeader from '../../components/AppHeader';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getImageUri } from '../../utils/url';
 import { useAuth } from '../../context/auth-context';
 
@@ -16,6 +17,7 @@ export default function ProductDetailScreen() {
   const navigation = useNavigation<any>();
   const { id } = route.params || { id: 'new' };
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const { products, categories, addProduct, editProduct, deleteProduct } = useAuth();
 
@@ -116,7 +118,7 @@ export default function ProductDetailScreen() {
         onBack={() => navigation.goBack()} 
       />
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}>
         <Surface elevation={1} style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline }]}>
 
           <TextInput
@@ -248,7 +250,6 @@ export default function ProductDetailScreen() {
 const styles = StyleSheet.create({
   scrollContent: {
     padding: 20,
-    paddingBottom: 64,
   },
   card: {
     padding: 20,

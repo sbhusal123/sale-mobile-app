@@ -1,13 +1,13 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
-import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -57,28 +57,34 @@ export default function HomeScreen() {
   const renderShimmer = () => (
     <View style={{ paddingHorizontal: 20 }}>
       <View style={styles.statsContainer}>
-        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
-          <ShimmerPlaceholder width={40} height={40} borderRadius={12} />
+        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, height: 80 }]}>
+          <ShimmerPlaceholder width={44} height={44} borderRadius={14} />
           <View style={{ flex: 1 }}>
-            <ShimmerPlaceholder width="40%" height={10} style={{ marginBottom: 4 }} />
-            <ShimmerPlaceholder width="60%" height={16} />
+            <ShimmerPlaceholder width="50%" height={10} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="70%" height={20} />
           </View>
         </Surface>
-        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
-          <ShimmerPlaceholder width={40} height={40} borderRadius={12} />
+        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, height: 80 }]}>
+          <ShimmerPlaceholder width={44} height={44} borderRadius={14} />
           <View style={{ flex: 1 }}>
-            <ShimmerPlaceholder width="40%" height={10} style={{ marginBottom: 4 }} />
-            <ShimmerPlaceholder width="60%" height={16} />
+            <ShimmerPlaceholder width="50%" height={10} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="70%" height={20} />
           </View>
         </Surface>
       </View>
-      <ShimmerPlaceholder width="40%" height={24} style={{ marginTop: 32, marginBottom: 16 }} />
+
+      <View style={styles.sectionHeader}>
+        <ShimmerPlaceholder width={120} height={24} borderRadius={4} />
+      </View>
+
       <View style={styles.grid}>
         {[1, 2, 3, 4].map(i => (
-          <Surface key={i} elevation={1} style={[styles.cardSurface, { width: '47.5%', marginBottom: 16, backgroundColor: theme.colors.surface }]}>
-            <ShimmerPlaceholder width={48} height={48} borderRadius={14} style={{ marginBottom: 16 }} />
-            <ShimmerPlaceholder width="70%" height={16} style={{ marginBottom: 8 }} />
-            <ShimmerPlaceholder width="90%" height={12} />
+          <Surface key={i} elevation={1} style={[styles.cardSurface, { width: '47.5%', height: 180, marginBottom: 16, backgroundColor: theme.colors.surface }]}>
+            <View style={{ padding: 20 }}>
+              <ShimmerPlaceholder width={52} height={52} borderRadius={16} style={{ marginBottom: 20 }} />
+              <ShimmerPlaceholder width="80%" height={18} style={{ marginBottom: 10 }} />
+              <ShimmerPlaceholder width="60%" height={12} />
+            </View>
           </Surface>
         ))}
       </View>
@@ -90,6 +96,7 @@ export default function HomeScreen() {
       <AppHeader
         title={t('home.dashboard')}
         onMenu={() => navigation.openDrawer()}
+        icon="home"
       />
 
       <ScrollView

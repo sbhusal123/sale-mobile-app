@@ -165,7 +165,11 @@ export default function ChatSessionsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppHeader title={t('chat.title')} onMenu={() => navigation.openDrawer()} />
+      <AppHeader
+        title={t('chat.title')}
+        onMenu={() => navigation.openDrawer()}
+        icon="chat-processing"
+      />
       
       <View style={styles.searchContainer}>
         <Searchbar

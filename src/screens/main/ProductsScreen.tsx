@@ -1,15 +1,15 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, Image, RefreshControl, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Chip, FAB, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import AppHeader from '../../components/AppHeader';
 import ImageViewer from '../../components/ImageViewer';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
-import AppHeader from '../../components/AppHeader';
 import { useAuth } from '../../context/auth-context';
 import { getImageUri } from '../../utils/url';
-import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -89,8 +89,9 @@ export default function ProductsScreen() {
       <AppHeader 
         title={t('products.title')} 
         onMenu={() => navigation.openDrawer()} 
+        icon="package-variant-closed"
       />
-      
+
       <View style={styles.headerControls}>
         <Searchbar
           placeholder={t('products.search_placeholder')}
@@ -102,7 +103,7 @@ export default function ProductsScreen() {
           iconColor={theme.colors.primary}
           placeholderTextColor={theme.colors.onSurfaceVariant}
         />
-        
+
         <View style={styles.categoryContainer}>
           <FlatList
             horizontal
@@ -115,8 +116,8 @@ export default function ProductsScreen() {
                 onPress={() => handleCategorySelect(item.id)}
                 style={[
                   styles.chip,
-                  selectedCategoryId === item.id 
-                    ? { backgroundColor: theme.colors.primary } 
+                  selectedCategoryId === item.id
+                    ? { backgroundColor: theme.colors.primary }
                     : { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }
                 ]}
                 textStyle={[

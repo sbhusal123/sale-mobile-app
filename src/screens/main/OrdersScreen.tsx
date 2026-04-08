@@ -77,6 +77,7 @@ export default function OrdersScreen() {
       <AppHeader 
         title={t('orders.title')} 
         onMenu={() => navigation.openDrawer()} 
+        icon="cart"
       />
 
       {isLoading ? renderShimmer() : (

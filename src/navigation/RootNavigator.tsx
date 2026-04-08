@@ -1,14 +1,14 @@
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React from 'react';
-import { View, Alert } from 'react-native';
+import { View, Alert, ScrollView } from 'react-native';
 import { Text, useTheme, Button } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/auth-context';
 import { useThemeContext } from '../context/theme-context';
 import { useTranslation } from 'react-i18next';
-import { changeLanguage } from '../i18n/i18n';
 import HeaderControls from '../components/HeaderControls';
+import ShimmerPlaceholder from '../components/ShimmerPlaceholder';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -29,14 +29,14 @@ import ProductDetailScreen from '../screens/details/ProductDetailScreen';
 import NotificationsScreen from '../screens/main/NotificationsScreen';
 import OrderChatScreen from '../screens/details/OrderChatScreen';
 
+import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
+
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
 
-import { DrawerContentScrollView, DrawerItemList, DrawerItem } from '@react-navigation/drawer';
-
 function CustomDrawerContent(props: any) {
   const theme = useTheme();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { logout } = useAuth();
 
   const handleLogout = () => {
@@ -49,7 +49,6 @@ function CustomDrawerContent(props: any) {
       ]
     );
   };
-
 
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{ flexGrow: 1, paddingTop: 40 }}>
@@ -125,9 +124,6 @@ function MainNavigator() {
   );
 }
 
-import { ActivityIndicator, ScrollView } from 'react-native';
-import ShimmerPlaceholder from '../components/ShimmerPlaceholder';
-
 export function RootNavigator() {
   const { user, loading } = useAuth();
   const theme = useTheme();
@@ -165,10 +161,10 @@ export function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
-      <Stack.Screen name="Splash" component={SplashScreen} />
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {!user ? (
         <>
+          <Stack.Screen name="Splash" component={SplashScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>

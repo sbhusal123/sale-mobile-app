@@ -1,13 +1,13 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { FAB, IconButton, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import AppHeader from '../../components/AppHeader';
+import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
-import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -66,11 +66,12 @@ export default function CategoriesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppHeader 
-        title={t('categories.title')} 
-        onMenu={() => navigation.openDrawer()} 
+      <AppHeader
+        title={t('categories.title')}
+        onMenu={() => navigation.openDrawer()}
+        icon="view-grid"
       />
-      
+
       <View style={styles.headerControls}>
         <Searchbar
           placeholder={t('categories.search_placeholder')}

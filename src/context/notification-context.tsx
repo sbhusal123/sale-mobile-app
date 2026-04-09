@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 import { storage } from '../utils/storage';
+import { useAuth } from './auth-context';
 
 const NOTIFICATIONS_STORAGE_KEY = '@notifications_list';
 
@@ -23,14 +25,61 @@ type NotificationContextType = {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
+  const { syncFcmToken } = useAuth();
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
   useEffect(() => {
     loadNotifications();
-    requestUserPermission();
+    setupFCM();
   }, []);
+
+  // Effect to sync token when both token and auth sync function (user) are ready
+  useEffect(() => {
+    if (fcmToken) {
+      syncFcmToken(fcmToken);
+    }
+  }, [fcmToken, syncFcmToken]);
+
+  const setupFCM = async () => {
+    const hasPermission = await requestUserPermission();
+    if (hasPermission) {
+      // Get FCM token
+      try {
+        const token = await messaging().getToken();
+        console.log('🔥 FCM Token:', token);
+        await storage.setItem('@fcm_token', token);
+        setFcmToken(token);
+      } catch (error) {
+        console.log('Failed to get FCM token', error);
+      }
+
+      // Listen to foreground messages
+      const unsubscribe = messaging().onMessage(async remoteMessage => {
+        console.log('📩 Foreground Message:', remoteMessage);
+        if (remoteMessage.notification) {
+          addNotification({
+            title: remoteMessage.notification.title || 'New Notification',
+            body: remoteMessage.notification.body || '',
+          });
+        }
+      });
+
+      // Handle token refreshes
+      const tokenUnsubscribe = messaging().onTokenRefresh(token => {
+        console.log('🔄 FCM Token Refreshed:', token);
+        storage.setItem('@fcm_token', token);
+        setFcmToken(token);
+      });
+
+      return () => {
+        unsubscribe();
+        tokenUnsubscribe();
+      };
+    }
+  };
 
   const loadNotifications = async () => {
     try {
@@ -52,14 +101,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   };
 
   const requestUserPermission = async () => {
-    if (Platform.OS === 'android' && Platform.Version >= 33) {
+    if (Platform.OS === 'ios') {
+      const authStatus = await messaging().requestPermission();
+      const enabled =
+        authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+        authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+      return enabled;
+    } else if (Platform.OS === 'android' && Platform.Version >= 33) {
       const granted = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
       );
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        console.warn('Notification permission denied');
-      }
+      return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
+    return true;
   };
 
   const addNotification = (notif: Omit<Notification, 'id' | 'time' | 'read'>) => {

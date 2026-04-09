@@ -46,13 +46,13 @@ export default function HomeScreen() {
   const totalOrders = orders?.length || 0;
   const totalSales = orders?.reduce((acc: number, o: any) => acc + parseFloat(o.total_price || 0), 0) || 0;
 
-  const navItems = [
+  const navItems = React.useMemo(() => [
     { title: t('home.products'), description: t('home.manage_stock'), screen: 'Products', icon: 'package-variant-closed', color: theme.colors.primary },
     { title: t('home.categories'), description: t('home.view_category'), screen: 'Categories', icon: 'view-grid', color: '#10B981' },
     { title: t('home.orders'), description: t('home.view_orders'), screen: 'Orders', icon: 'cart', color: '#F59E0B' },
     { title: t('home.conversations'), description: t('home.inquiry_chat'), screen: 'Conversations', icon: 'chat-processing', color: '#6366F1' },
     { title: t('home.account'), description: t('account.title'), screen: 'Account', icon: 'account-circle', color: '#EC4899' },
-  ];
+  ], [t, theme.colors]);
 
   const renderShimmer = () => (
     <View style={{ paddingHorizontal: 20 }}>

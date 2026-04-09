@@ -1,15 +1,100 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { FlatList, RefreshControl, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { useTranslation } from 'react-i18next';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 import { Divider, FAB, IconButton, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
-import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
+
+const OrderItem = React.memo(({ item, theme, t, products, onNavigate, onChat }: any) => {
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'completed': return '#10B981';
+      case 'processing': return '#6366F1';
+      case 'cancelled': return '#EF4444';
+      default: return '#F59E0B';
+    }
+  };
+
+  const status = (item as any).order_status || 'Pending';
+  const statusColor = getStatusColor(status);
+
+  return (
+    <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+      <TouchableRipple
+        onPress={() => onNavigate(item.id)}
+        style={styles.cardRipple}
+        rippleColor={theme.colors.primary + '1A'}
+      >
+        <View style={styles.cardContent}>
+          <View style={styles.cardHeader}>
+            <View style={{ flex: 1 }}>
+              <Text variant="titleMedium" style={[styles.orderId, { color: theme.colors.onSurface }]}>
+                {t('orders.order_id', { id: item.id })}
+              </Text>
+              <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
+                <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+                <Text variant="labelSmall" style={[styles.statusText, { color: statusColor }]}>
+                  {status.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+            <Text variant="headlineSmall" style={[styles.orderPrice, { color: theme.colors.onSurface }]}>
+              ₹{parseFloat(item.total_price).toLocaleString()}
+            </Text>
+          </View>
+
+          <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+
+          <View style={styles.infoSection}>
+            <View style={styles.orderDetailRow}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '10' }]}>
+                <Icon name="package-variant" size={18} color={theme.colors.primary} />
+              </View>
+              <Text variant="bodyMedium" style={[styles.productText, { color: theme.colors.onSurface }]}>
+                {products.find((p: any) => p.id === item.product)?.name || t('orders.unknown')}
+                <Text style={{ opacity: 0.5 }}> • </Text>
+                {item.quantity} {t('orders.units')}
+              </Text>
+            </View>
+
+            <View style={styles.orderDetailRow}>
+              <View style={[styles.iconContainer, { backgroundColor: theme.colors.onSurfaceVariant + '10' }]}>
+                <Icon name="calendar-range" size={18} color={theme.colors.onSurfaceVariant} />
+              </View>
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, fontWeight: '700' }}>
+                {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
+              </Text>
+            </View>
+
+            <View style={[styles.orderDetailRow, { justifyContent: 'space-between' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                <View style={[styles.iconContainer, { backgroundColor: theme.colors.onSurfaceVariant + '10' }]}>
+                  <Icon name="map-marker-outline" size={18} color={theme.colors.onSurfaceVariant} />
+                </View>
+                <Text variant="bodySmall" style={[styles.locationText, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
+                  {item.location}
+                </Text>
+              </View>
+              <IconButton
+                icon="message-text-outline"
+                size={20}
+                iconColor={theme.colors.primary}
+                onPress={() => onChat(item.session_id)}
+                style={styles.chatBtn}
+              />
+            </View>
+          </View>
+        </View>
+      </TouchableRipple>
+    </Surface>
+  );
+});
 
 export default function OrdersScreen() {
   const { t } = useTranslation();
@@ -72,11 +157,26 @@ export default function OrdersScreen() {
     </View>
   );
 
+  console.log("orders", orders)
+
+  const renderOrderItem = React.useCallback(({ item }: any) => (
+    <OrderItem
+      item={item}
+      theme={theme}
+      t={t}
+      products={products}
+      onNavigate={(id: any) => navigation.navigate('OrderDetail', { id })}
+      onChat={() => navigation.navigate('OrderChat', { chatSessionId: item.chat_session, id: item.id })}
+    />
+  ), [theme, t, products, navigation]);
+
+
+  console.log("Item::", orders)
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppHeader 
-        title={t('orders.title')} 
-        onMenu={() => navigation.openDrawer()} 
+      <AppHeader
+        title={t('orders.title')}
+        onMenu={() => navigation.openDrawer()}
         icon="cart"
       />
 
@@ -89,81 +189,15 @@ export default function OrdersScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
           }
-          renderItem={({ item }) => {
-            const status = (item as any).order_status || 'Pending';
-            const statusColor = getStatusColor(status);
-            
-            return (
-              <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
-                <TouchableRipple
-                  onPress={() => navigation.navigate('OrderDetail', { id: item.id })}
-                  style={styles.cardRipple}
-                  rippleColor={theme.colors.primary + '1A'}
-                >
-                  <View style={styles.cardContent}>
-                    <View style={styles.cardHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text variant="titleMedium" style={[styles.orderId, { color: theme.colors.onSurface }]}>
-                          {t('orders.order_id', { id: item.id })}
-                        </Text>
-                        <View style={[styles.statusBadge, { backgroundColor: statusColor + '15' }]}>
-                          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-                          <Text variant="labelSmall" style={[styles.statusText, { color: statusColor }]}>
-                            {status.toUpperCase()}
-                          </Text>
-                        </View>
-                      </View>
-                      <Text variant="headlineSmall" style={[styles.orderPrice, { color: theme.colors.onSurface }]}>
-                        ₹{parseFloat(item.total_price).toLocaleString()}
-                      </Text>
-                    </View>
-
-                    <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-                    <View style={styles.infoSection}>
-                      <View style={styles.orderDetailRow}>
-                        <View style={[styles.iconContainer, { backgroundColor: theme.colors.primary + '10' }]}>
-                          <Icon name="package-variant" size={18} color={theme.colors.primary} />
-                        </View>
-                        <Text variant="bodyMedium" style={[styles.productText, { color: theme.colors.onSurface }]}>
-                          {products.find(p => p.id === item.product)?.name || t('orders.unknown')}
-                          <Text style={{ opacity: 0.5 }}> • </Text>
-                          {item.quantity} {t('orders.units')}
-                        </Text>
-                      </View>
-
-                      <View style={styles.orderDetailRow}>
-                        <View style={[styles.iconContainer, { backgroundColor: theme.colors.onSurfaceVariant + '10' }]}>
-                          <Icon name="calendar-range" size={18} color={theme.colors.onSurfaceVariant} />
-                        </View>
-                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, fontWeight: '700' }}>
-                          {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'N/A'}
-                        </Text>
-                      </View>
-
-                      <View style={[styles.orderDetailRow, { justifyContent: 'space-between' }]}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
-                          <View style={[styles.iconContainer, { backgroundColor: theme.colors.onSurfaceVariant + '10' }]}>
-                            <Icon name="map-marker-outline" size={18} color={theme.colors.onSurfaceVariant} />
-                          </View>
-                          <Text variant="bodySmall" style={[styles.locationText, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
-                            {item.location}
-                          </Text>
-                        </View>
-                        <IconButton
-                          icon="message-text-outline"
-                          size={20}
-                          iconColor={theme.colors.primary}
-                          onPress={() => navigation.navigate('OrderChat', { id: item.id })}
-                          style={styles.chatBtn}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                </TouchableRipple>
-              </Surface>
-            );
-          }}
+          renderItem={renderOrderItem}
+          getItemLayout={(_: any, index: number) => ({
+            length: 226, // card height (~208) + gap (18)
+            offset: 226 * index,
+            index,
+          })}
+          initialNumToRender={5}
+          maxToRenderPerBatch={10}
+          windowSize={5}
         />
       )}
 

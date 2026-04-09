@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "890863413098",
+    "project_id": "salesbotmanager-45e53",
+    "storage_bucket": "salesbotmanager-45e53.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890863413098:android:f8a39869376d111551e713",
+        "android_client_info": {
+          "package_name": "com.salesagentbot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbJWlFP_wRUBmmpCfRIybti4H8PQBwgKE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -4,11 +4,11 @@ import { useTranslation } from 'react-i18next';
 import {
   Alert,
   FlatList,
-  KeyboardAvoidingView,
   Platform,
   StyleSheet,
   TouchableOpacity,
   View,
+  Keyboard,
 } from 'react-native';
 import {
   ActivityIndicator,
@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient, { WS_BASE_URL } from '../../api/client';
 import BackButton from '../../components/BackButton';
+import LoadingOverlay from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/auth-context';
 
 const Icon = MaterialCommunityIcons as any;
@@ -80,7 +81,11 @@ export default function OrderChatScreen() {
   const { user, orders } = useAuth();
   const ws = useRef<WebSocket | null>(null);
 
-  const currentOrder = orders.find((o) => o.id === Number(id));
+  const currentOrder = id
+    ? orders.find((o) => o.id === Number(id))
+    : (chatSessionId ? orders.find((o) => o.chat_session === chatSessionId) : undefined);
+
+  const orderId = currentOrder?.id || id;
   const chatSession = chatSessionId || currentOrder?.chat_session;
 
   const [message, setMessage] = useState('');
@@ -90,6 +95,39 @@ export default function OrderChatScreen() {
   const [isSending, setIsSending] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionDetails, setSessionDetails] = useState<any>(null);
+
+  const translateY = useSharedValue(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        translateY.value = withTiming(
+          Platform.OS === 'ios' ? -e.endCoordinates.height + 90 : -320,
+          { duration: 300 }
+        );
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        translateY.value = withTiming(0, { duration: 300 });
+      }
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
+
+  console.log("chatSession", chatSession);
+  console.log("orderId", orderId);
+
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -263,15 +301,23 @@ export default function OrderChatScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <Animated.View style={[styles.container, { backgroundColor: theme.colors.background }, animatedStyle]}>
       <Surface elevation={4} style={[styles.header, { backgroundColor: theme.colors.surface, paddingTop: insets.top }]}>
         <View style={styles.headerTop}>
           <BackButton />
           <View style={styles.headerInfo}>
             <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.colors.onSurface }]}>
-              {id ? t('order_chat.title', { id }) : (sessionDetails?.chat_user_details?.name || 'Customer')}
+              {orderId ? `Order #${orderId}` : (sessionDetails?.chat_user_details?.name || 'Customer')}
             </Text>
             <View style={styles.statusRow}>
+              {orderId && chatSession && (
+                <>
+                  <Text variant="labelSmall" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+                    Session: {chatSession.substring(0, 8)}...
+                  </Text>
+                  <Text style={{ color: theme.colors.outline }}> • </Text>
+                </>
+              )}
               <View style={[styles.onlineDot, { backgroundColor: wsStatus === 'open' ? '#10B981' : (wsStatus === 'connecting' ? '#F59E0B' : '#EF4444') }]} />
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontWeight: '700' }}>
                 {wsStatus === 'open' ? t('order_chat.online') : (wsStatus === 'connecting' ? t('order_chat.connecting') : t('order_chat.offline'))}
@@ -301,11 +347,7 @@ export default function OrderChatScreen() {
         </View>
       </Surface>
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 70}
-      >
+      <View style={{ flex: 1 }}>
         {isMessagesLoading ? (
           <View style={styles.shimmerContainer}>
             <ShimmerPlaceholder width="60%" height={50} style={{ alignSelf: 'flex-start', marginBottom: 20 }} />
@@ -330,6 +372,8 @@ export default function OrderChatScreen() {
             onChangeText={setMessage}
             mode="flat"
             multiline
+            cursorColor={theme.colors.primary}
+            selectionColor={theme.colors.primary}
             style={[styles.input, { backgroundColor: theme.colors.primary + '05' }]}
             underlineColor="transparent"
             activeUnderlineColor="transparent"
@@ -351,8 +395,10 @@ export default function OrderChatScreen() {
             )}
           </TouchableOpacity>
         </Surface>
-      </KeyboardAvoidingView>
-    </View>
+      </View>
+
+      <LoadingOverlay visible={isSending} message={t('common.sending') || 'Sending...'} icon="send-circle-outline" />
+    </Animated.View>
   );
 }
 

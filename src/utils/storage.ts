@@ -14,6 +14,9 @@ class SafeStorage {
 
   private async checkNativeAvailability() {
     try {
+      if (!AsyncStorage || typeof AsyncStorage.getItem !== 'function') {
+        throw new Error('AsyncStorage not available');
+      }
       // Try a simple operation to check if the native module is linked
       await AsyncStorage.getItem('__test__');
       this.isNativeAvailable = true;
@@ -24,11 +27,10 @@ class SafeStorage {
   }
 
   async getItem(key: string): Promise<string | null> {
-    if (this.isNativeAvailable) {
+    if (this.isNativeAvailable && AsyncStorage) {
       try {
         return await AsyncStorage.getItem(key);
       } catch (e) {
-        this.isNativeAvailable = false;
         return this.memoryStore[key] || null;
       }
     }
@@ -36,7 +38,7 @@ class SafeStorage {
   }
 
   async setItem(key: string, value: string): Promise<void> {
-    if (this.isNativeAvailable) {
+    if (this.isNativeAvailable && AsyncStorage) {
       try {
         await AsyncStorage.setItem(key, value);
         return;
@@ -48,7 +50,7 @@ class SafeStorage {
   }
 
   async removeItem(key: string): Promise<void> {
-    if (this.isNativeAvailable) {
+    if (this.isNativeAvailable && AsyncStorage) {
       try {
         await AsyncStorage.removeItem(key);
         return;
@@ -60,7 +62,7 @@ class SafeStorage {
   }
 
   async clear(): Promise<void> {
-    if (this.isNativeAvailable) {
+    if (this.isNativeAvailable && AsyncStorage) {
       try {
         await AsyncStorage.clear();
         return;

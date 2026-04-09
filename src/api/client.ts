@@ -5,7 +5,7 @@ import { storage } from '../utils/storage';
 
 export const API_BASE_URL = 'https://chatbot.tekkops.com/api/';
 export const WS_BASE_URL = 'wss://chatbot.tekkops.com/ws/chat/';
-export const MEDIA_BASE_URL = 'https://chatbot.tekkops.com/media';
+export const MEDIA_BASE_URL = 'https://chatbot.tekkops.com/media/';
 
 const USER_STORAGE_KEY = '@user_session';
 

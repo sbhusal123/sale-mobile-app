@@ -4,7 +4,7 @@ import { ThemeProvider, useThemeContext } from '@/context/theme-context';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { DarkTheme as NavDarkTheme, DefaultTheme as NavLightTheme, NavigationContainer } from '@react-navigation/native';
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { Platform, StatusBar, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
@@ -94,11 +94,13 @@ export default function App() {
   const [isI18nInitialized, setIsI18nInitialized] = React.useState(false);
 
   React.useEffect(() => {
-    initI18n().then(() => setIsI18nInitialized(true));
+    initI18n()
+      .catch(err => console.error('i18n init error:', err))
+      .finally(() => setIsI18nInitialized(true));
   }, []);
 
   if (!isI18nInitialized) {
-    return null; // Or a very basic splash view
+    return <View style={{ flex: 1, backgroundColor: '#4F46E5' }} />; // Themed background
   }
 
   return (

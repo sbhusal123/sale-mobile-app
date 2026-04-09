@@ -1,50 +1,85 @@
-# Welcome to your Expo app 👋
+# Sales Agent Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A premium, localized sales management application built with React Native.
 
-## Get started
+## 🚀 Key Features
+- **Premium UI**: Modern Indigo/Emerald design with dark/light mode support.
+- **Multilingual**: High-quality English and Nepali translations.
+- **Push Notifications**: Integrated Firebase Cloud Messaging (FCM).
+- **Fast Experience**: Optimized navigation with Instant-on splash skip for authenticated users.
 
-1. Install dependencies
+---
 
-   ```bash
-   npm install
-   ```
+## 🛠 Prerequisites
+- Node.js >= 22
+- pnpm
+- Android Studio / Xcode (for native builds)
 
-2. Start the app
+---
 
-   ```bash
-   npx expo start
-   ```
+## 🏃‍♂️ Running the App
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
+### 1. Start Metro Bundler
 ```bash
-npm run reset-project
+pnpm start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Run on Android
+```bash
+pnpm android
+```
 
-## Learn more
+### 3. Run on iOS
+```bash
+pnpm ios
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+---
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## 📦 Build & Release (Android)
 
-## Join the community
+All commands should be run from the root directory unless specified.
 
-Join our community of developers creating universal apps.
+### Build Debug APK
+```bash
+cd android && ./gradlew assembleDebug
+```
+*Output: `android/app/build/outputs/apk/debug/app-debug.apk`*
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Build Release APK
+```bash
+cd android && ./gradlew assembleRelease
+```
+*Output: `android/app/build/outputs/apk/release/app-release.apk`*
+
+### Build Release Bundle (AAB)
+```bash
+cd android && ./gradlew bundleRelease
+```
+*Output: `android/app/build/outputs/bundle/release/app-release.aab`*
+
+---
+
+## 🧹 Maintenance Commands
+
+### Clean Android Build
+```bash
+cd android && ./gradlew clean
+```
+
+### Clear Metro Cache
+```bash
+pnpm start --reset-cache
+```
+
+---
+
+## 🌍 Localization
+The app uses `i18next`. Localization files are located in `src/i18n/locales/`.
+- English: `en.json`
+- Nepali: `ne.json`
+
+---
+
+## 🔔 Firebase Configuration
+Ensure `android/app/google-services.json` is present for push notifications to work.

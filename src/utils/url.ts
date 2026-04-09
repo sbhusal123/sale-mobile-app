@@ -12,7 +12,10 @@ export const getImageUri = (path: string | null): string | null => {
     return path;
   }
   
-  // If it's a relative path, ensure it doesn't have a leading slash if MEDIA_BASE_URL ends with one
+  // Ensure a clean path without leading slash
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
-  return `${MEDIA_BASE_URL}${cleanPath}`;
+  
+  // Combine ensuring exactly one slash if MEDIA_BASE_URL doesn't have one, or use it as is if it does
+  const baseUrl = MEDIA_BASE_URL.endsWith('/') ? MEDIA_BASE_URL : `${MEDIA_BASE_URL}/`;
+  return `${baseUrl}${cleanPath}`;
 };

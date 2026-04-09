@@ -1,12 +1,14 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, TouchableOpacity } from 'react-native';
-import { Button, Menu, Surface, Text, TextInput, useTheme, Divider } from 'react-native-paper';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import AppHeader from '../../components/AppHeader';
-import { useAuth } from '../../context/auth-context';
 import { useTranslation } from 'react-i18next';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Button, Dialog, Divider, Menu, Portal, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import apiClient from '../../api/client';
+import AppHeader from '../../components/AppHeader';
+import LoadingOverlay from '../../components/LoadingOverlay';
+import { useAuth } from '../../context/auth-context';
 
 const Icon = MaterialCommunityIcons as any;
 
@@ -31,7 +33,34 @@ export default function OrderDetailScreen() {
   const [specialInstructions, setSpecialInstructions] = useState(existingOrder?.special_instructions || '');
   const [orderStatus, setOrderStatus] = useState(existingOrder?.order_status || 'PENDING');
 
-  const [productMenuVisible, setProductMenuVisible] = useState(false);
+  const [productDialogVisible, setProductDialogVisible] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(t('common.saving') || 'Saving...');
+  const [fetchedOrder, setFetchedOrder] = useState<any>(null);
+
+  const [chatUsers, setChatUsers] = useState<any[]>([]);
+  const [chatUserDialogVisible, setChatUserDialogVisible] = useState(false);
+  const [chatUserSearchQuery, setChatUserSearchQuery] = useState('');
+  const [newCustomerModalVisible, setNewCustomerModalVisible] = useState(false);
+
+  const [customerName, setCustomerName] = useState(existingOrder?.chat_user?.name || (existingOrder as any)?.user?.name || '');
+  const [customerEmail, setCustomerEmail] = useState(existingOrder?.chat_user?.email || (existingOrder as any)?.user?.email || '');
+  const [selectedChatUserId, setSelectedChatUserId] = useState<number | null>(existingOrder?.chat_user?.id || null);
+
+  useEffect(() => {
+    if (!isNew && id) {
+      apiClient.get(`orders/${id}/`)
+        .then(res => setFetchedOrder(res.data))
+        .catch(err => console.error("Error fetching single order:", err));
+    }
+  }, [isNew, id]);
+
+  useEffect(() => {
+    apiClient.get('chat-users/')
+      .then(res => setChatUsers(res.data || []))
+      .catch(err => console.error("Error fetching chat users:", err));
+  }, []);
 
   useEffect(() => {
     if (!isNew && !existingOrder) {
@@ -46,6 +75,10 @@ export default function OrderDetailScreen() {
       Alert.alert(t('common.error'), (t('order_detail.product') || 'Product') + ' ' + (t('common.required') || 'is required'));
       return;
     }
+    if (!selectedChatUserId && (!customerName || !phone)) {
+      Alert.alert(t('common.error'), 'Customer Name and Phone are required for new customer');
+      return;
+    }
 
     const data: any = {
       product: productId,
@@ -53,18 +86,23 @@ export default function OrderDetailScreen() {
       total_price: totalPrice || "0",
       location,
       phone,
+      name: customerName,
+      email: customerEmail,
       special_instructions: specialInstructions,
       order_status: orderStatus,
-      chat_user: existingOrder?.chat_user || "",
-      chat_session: existingOrder?.chat_session || "",
+      chat_user: selectedChatUserId || null,
+      chat_session: existingOrder?.chat_session || null,
     };
 
+    setLoadingMessage(t('common.saving') || 'Saving...');
+    setIsSaving(true);
     let success = false;
     if (isNew) {
       success = await addOrder(data);
     } else {
       success = await editOrder(Number(id), data);
     }
+    setIsSaving(false);
 
     if (success) {
       navigation.goBack();
@@ -73,12 +111,44 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const handleCreateCustomer = async () => {
+    if (!customerName || !phone) {
+      Alert.alert(t('common.error'), 'Name and Phone are required');
+      return;
+    }
+
+    setLoadingMessage('Creating customer...');
+    setIsSaving(true);
+
+    try {
+      const payload = {
+        name: customerName,
+        phone: phone,
+        email: customerEmail || null
+      };
+      const response = await apiClient.post('chat-users/', payload);
+      const newUser = response.data;
+
+      setChatUsers(prev => [...prev, newUser]);
+      setSelectedChatUserId(newUser.id);
+      setNewCustomerModalVisible(false);
+    } catch (error) {
+      console.error('Create customer error:', error);
+      Alert.alert(t('common.error'), 'Failed to create customer');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleDelete = () => {
     Alert.alert(t('order_detail.delete_confirm'), t('common.confirm_delete'), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive', onPress: async () => {
+          setLoadingMessage(t('common.deleting') || 'Deleting...');
+          setIsSaving(true);
           const success = await deleteOrder(Number(id));
+          setIsSaving(false);
           if (success) navigation.goBack();
         }
       }
@@ -94,20 +164,24 @@ export default function OrderDetailScreen() {
     }
   };
 
+  const customerUser = fetchedOrder?.chat_user || (existingOrder as any)?.user;
+
+  console.log("customerUser", customerUser);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <AppHeader 
-        title={isNew ? t('order_detail.add_title') : t('order_detail.title')} 
-        showBack 
-        onBack={() => navigation.goBack()} 
+      <AppHeader
+        title={isNew ? t('order_detail.add_title') : t('order_detail.title')}
+        showBack
+        onBack={() => navigation.goBack()}
       />
-      
+
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
       >
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
         >
@@ -127,36 +201,20 @@ export default function OrderDetailScreen() {
 
           <Surface elevation={2} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
             <View style={styles.inputGap}>
-              <Menu
-                visible={productMenuVisible}
-                onDismiss={() => setProductMenuVisible(false)}
-                anchor={
-                  <TouchableOpacity 
-                    onPress={() => setProductMenuVisible(true)}
-                    style={[styles.menuAnchor, { borderColor: theme.colors.outline, borderWidth: 1 }]}
-                  >
-                    <View style={styles.menuAnchorLeft}>
-                      <Icon name="package-variant" size={24} color={theme.colors.primary} style={{ marginRight: 12 }} />
-                      <Text style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
-                        {selectedProduct ? selectedProduct.name : t('order_detail.product')}
-                      </Text>
-                    </View>
-                    <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
-                  </TouchableOpacity>
-                }
-                contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: 18 }}
-              >
-                {products.map((p) => (
-                  <Menu.Item
-                    key={p.id}
-                    onPress={() => {
-                      setProductId(p.id);
-                      setProductMenuVisible(false);
-                    }}
-                    title={p.name}
+              <TouchableOpacity onPress={() => setProductDialogVisible(true)} activeOpacity={0.7}>
+                <View pointerEvents="none">
+                  <TextInput
+                    label={t('order_detail.product', 'Product') + ' *'}
+                    value={selectedProduct ? selectedProduct.name : ''}
+                    mode="outlined"
+                    style={styles.input}
+                    outlineStyle={{ borderRadius: 18 }}
+                    left={<TextInput.Icon icon="package-variant" color={theme.colors.primary} />}
+                    right={<TextInput.Icon icon="chevron-down" color={theme.colors.onSurfaceVariant} />}
+                    editable={false}
                   />
-                ))}
-              </Menu>
+                </View>
+              </TouchableOpacity>
 
               <View style={styles.rowInputs}>
                 <TextInput
@@ -191,15 +249,20 @@ export default function OrderDetailScreen() {
                 left={<TextInput.Icon icon="map-marker-outline" color={theme.colors.primary} />}
               />
 
-              <TextInput
-                label={t('order_detail.phone')}
-                value={phone}
-                onChangeText={setPhone}
-                mode="outlined"
-                style={styles.input}
-                outlineStyle={{ borderRadius: 18 }}
-                left={<TextInput.Icon icon="phone-outline" color={theme.colors.primary} />}
-              />
+              <TouchableOpacity onPress={() => setChatUserDialogVisible(true)} activeOpacity={0.7}>
+                <View pointerEvents="none">
+                  <TextInput
+                    label={t('order_detail.customer_info', 'Customer') + ' *'}
+                    value={selectedChatUserId ? (chatUsers.find((u) => String(u.id) === String(selectedChatUserId))?.name || "Customer Info") : (customerName ? `${customerName} (New)` : '')}
+                    mode="outlined"
+                    style={styles.input}
+                    outlineStyle={{ borderRadius: 18 }}
+                    left={<TextInput.Icon icon="account-group" color={theme.colors.primary} />}
+                    right={<TextInput.Icon icon="chevron-down" color={theme.colors.onSurfaceVariant} />}
+                    editable={false}
+                  />
+                </View>
+              </TouchableOpacity>
 
               <View style={styles.statusQuickSection}>
                 <Text variant="labelSmall" style={[styles.sectionLabel, { color: theme.colors.onSurfaceVariant }]}>{t('order_detail.quick_update')}</Text>
@@ -239,7 +302,7 @@ export default function OrderDetailScreen() {
               />
             </View>
 
-            {!isNew && (existingOrder as any)?.user && (
+            {!isNew && customerUser && (
               <View style={styles.customerCardSection}>
                 <Divider style={styles.cardDivider} />
                 <View style={styles.sectionHeader}>
@@ -249,15 +312,15 @@ export default function OrderDetailScreen() {
                 <View style={[styles.customerInfoBox, { backgroundColor: theme.colors.primary + '08', borderRadius: 18 }]}>
                   <View style={styles.infoRow}>
                     <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.full_name')}</Text>
-                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{((existingOrder as any).user).name || '---'}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser.name || '---'}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('order_detail.phone')}</Text>
-                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{((existingOrder as any).user).phone || '---'}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser.phone || '---'}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.email')}</Text>
-                    <Text variant="bodyMedium" style={{ fontWeight: '600' }}>{((existingOrder as any).user).email || '---'}</Text>
+                    <Text variant="bodyMedium" style={{ fontWeight: '600' }}>{customerUser.email || '---'}</Text>
                   </View>
                 </View>
               </View>
@@ -279,11 +342,12 @@ export default function OrderDetailScreen() {
                 <View style={styles.bottomActions}>
                   <Button
                     mode="outlined"
-                    onPress={() => navigation.navigate('OrderChat', { id: item.id })}
+                    onPress={() => navigation.navigate('OrderChat', { id: existingOrder?.id || id, chatSessionId: fetchedOrder?.chat_session || existingOrder?.chat_session })}
                     style={[styles.flexBtn, { marginRight: 8 }]}
                     contentStyle={styles.btnContent}
                     labelStyle={styles.flexBtnLabel}
                     icon="chat-processing-outline"
+                    disabled={!fetchedOrder?.chat_session && !existingOrder?.chat_session}
                   >
                     {t('orders.chat') || 'Chat'}
                   </Button>
@@ -304,6 +368,135 @@ export default function OrderDetailScreen() {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Portal>
+        <Dialog visible={productDialogVisible} onDismiss={() => setProductDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24, maxHeight: '80%' }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Select Product</Dialog.Title>
+          <Dialog.Content style={{ paddingBottom: 0 }}>
+            <TextInput
+              placeholder="Search products..."
+              value={productSearchQuery}
+              onChangeText={setProductSearchQuery}
+              mode="outlined"
+              style={{ backgroundColor: 'transparent', marginBottom: 12 }}
+              outlineStyle={{ borderRadius: 12 }}
+              left={<TextInput.Icon icon="magnify" color={theme.colors.primary} />}
+            />
+            <ScrollView style={{ maxHeight: 400 }}>
+              {products
+                .filter(p => (p.name || '').toLowerCase().includes(productSearchQuery.toLowerCase()))
+                .map((p) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                    onPress={() => {
+                      setProductId(p.id);
+                      setProductDialogVisible(false);
+                      setProductSearchQuery('');
+                    }}
+                  >
+                    <Text style={{ color: theme.colors.onSurface, fontSize: 16 }}>{p.name}</Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setProductDialogVisible(false)} textColor={theme.colors.onSurfaceVariant}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={newCustomerModalVisible} onDismiss={() => setNewCustomerModalVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24 }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Create New Customer</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label={t('order_detail.customer_name', 'Customer Name') + ' *'}
+              value={customerName}
+              onChangeText={setCustomerName}
+              mode="outlined"
+              style={[styles.input, { marginBottom: 12 }]}
+              outlineStyle={{ borderRadius: 18 }}
+              left={<TextInput.Icon icon="account-outline" color={theme.colors.primary} />}
+            />
+            <TextInput
+              label={t('order_detail.phone', 'Phone') + ' *'}
+              value={phone}
+              onChangeText={setPhone}
+              mode="outlined"
+              style={[styles.input, { marginBottom: 12 }]}
+              outlineStyle={{ borderRadius: 18 }}
+              left={<TextInput.Icon icon="phone-outline" color={theme.colors.primary} />}
+            />
+            <TextInput
+              label={t('order_detail.customer_email', 'Customer Email')}
+              value={customerEmail}
+              onChangeText={setCustomerEmail}
+              mode="outlined"
+              keyboardType="email-address"
+              style={styles.input}
+              outlineStyle={{ borderRadius: 18 }}
+              left={<TextInput.Icon icon="email-outline" color={theme.colors.primary} />}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setNewCustomerModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
+            <Button onPress={handleCreateCustomer} mode="contained" style={{ borderRadius: 20 }}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+        <Dialog visible={chatUserDialogVisible} onDismiss={() => setChatUserDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24, maxHeight: '80%' }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>{t('order_detail.select_customer', 'Select Customer')}</Dialog.Title>
+          <Dialog.Content style={{ paddingBottom: 0 }}>
+            <TextInput
+              placeholder={t('order_detail.search_customers', 'Search customers...')}
+              value={chatUserSearchQuery}
+              onChangeText={setChatUserSearchQuery}
+              mode="outlined"
+              style={{ backgroundColor: 'transparent', marginBottom: 12 }}
+              outlineStyle={{ borderRadius: 12 }}
+              left={<TextInput.Icon icon="magnify" color={theme.colors.primary} />}
+            />
+            <ScrollView style={{ maxHeight: 400 }}>
+              <TouchableOpacity
+                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                onPress={() => {
+                  setChatUserDialogVisible(false);
+                  setChatUserSearchQuery('');
+                  setSelectedChatUserId(null);
+                  setCustomerName('');
+                  setPhone('');
+                  setCustomerEmail('');
+                  setNewCustomerModalVisible(true);
+                }}
+              >
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>+ {t('order_detail.create_new_customer', 'Create New Customer')}</Text>
+              </TouchableOpacity>
+              {chatUsers
+                .filter(u => (u.name || '').toLowerCase().includes(chatUserSearchQuery.toLowerCase()) || (u.phone || '').includes(chatUserSearchQuery))
+                .map((u) => (
+                  <TouchableOpacity
+                    key={u.id}
+                    style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                    onPress={() => {
+                      setSelectedChatUserId(u.id);
+                      setCustomerName(u.name || '');
+                      setPhone(u.phone || '');
+                      setCustomerEmail(u.email || '');
+                      setChatUserDialogVisible(false);
+                      setChatUserSearchQuery('');
+                    }}
+                  >
+                    <Text style={{ color: theme.colors.onSurface, fontSize: 16 }}>{u.name}</Text>
+                    <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 13, marginTop: 2 }}>{u.phone}</Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setChatUserDialogVisible(false)} textColor={theme.colors.onSurfaceVariant}>{t('common.close', 'Close')}</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      <LoadingOverlay visible={isSaving} message={loadingMessage} />
     </View>
   );
 }

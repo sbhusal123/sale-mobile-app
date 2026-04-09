@@ -20,6 +20,13 @@ export type Product = {
   };
 };
 
+export type Customer = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+};
+
 export type Order = {
   id: number;
   quantity: number;
@@ -30,7 +37,7 @@ export type Order = {
   special_instructions: string;
   order_status: string;
   user: number;
-  chat_user: string;
+  chat_user?: Customer | null;
   chat_session: string;
   product: number;
 };

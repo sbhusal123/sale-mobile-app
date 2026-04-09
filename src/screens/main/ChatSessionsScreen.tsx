@@ -24,6 +24,68 @@ import { useTranslation } from 'react-i18next';
 
 const Icon = MaterialCommunityIcons as any;
 
+const ChatSessionItem = React.memo(({ item, theme, t, i18n, onNavigate, formatRelativeTime, getChannelIcon }: any) => (
+  <Surface elevation={1} style={styles.card}>
+    <Card
+      onPress={() => onNavigate(item.id)}
+      style={{ backgroundColor: theme.colors.surface }}
+    >
+      <Card.Content style={styles.cardContent}>
+        <View style={styles.avatarSection}>
+          <Avatar.Icon
+            size={48}
+            icon={getChannelIcon(item.channel)}
+            style={{ backgroundColor: item.channel === 'WHATSAPP' ? '#25D366' : '#1877F2' }}
+            color="#fff"
+          />
+          {item.reply_from === 'HUMAN_ASSISTANT' && (
+            <View style={[styles.agentBadge, { backgroundColor: theme.colors.primary }]} />
+          )}
+        </View>
+        
+        <View style={styles.infoSection}>
+          <View style={styles.nameRow}>
+            <Text variant="titleMedium" style={styles.userName} numberOfLines={1}>
+              {item.chat_user_details?.name || t('chat.unknown_user')}
+            </Text>
+            <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
+              {formatRelativeTime(item.updated_at)}
+            </Text>
+          </View>
+          
+          <View style={styles.metaRow}>
+            <View style={[
+              styles.modeBadge, 
+              { backgroundColor: item.reply_from === 'AI_ASSISTANT' ? '#9C27B0' : theme.colors.primary }
+            ]}>
+              <Icon 
+                name={item.reply_from === 'AI_ASSISTANT' ? 'robot' : 'account'} 
+                size={12} 
+                color="#fff" 
+              />
+              <Text variant="labelSmall" style={styles.modeLabel}>
+                {item.reply_from === 'AI_ASSISTANT' ? t('chat.ai_assistant') : t('chat.human_agent')}
+              </Text>
+            </View>
+            <View style={[styles.channelTag, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontSize: 10 }}>
+                {item.channel}
+              </Text>
+            </View>
+          </View>
+        </View>
+        
+        <IconButton
+          icon="chevron-right"
+          size={20}
+          style={{ marginRight: -8 }}
+          onPress={() => onNavigate(item.id)}
+        />
+      </Card.Content>
+    </Card>
+  </Surface>
+));
+
 export default function ChatSessionsScreen() {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<any>();
@@ -101,67 +163,17 @@ export default function ChatSessionsScreen() {
     return date.toLocaleDateString(i18n.language === 'ne' ? 'ne-NP' : 'en-US');
   };
 
-  const renderSessionItem = ({ item }: { item: any }) => (
-    <Surface elevation={1} style={styles.card}>
-      <Card
-        onPress={() => navigation.navigate('OrderChat', { chatSessionId: item.id })}
-        style={{ backgroundColor: theme.colors.surface }}
-      >
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.avatarSection}>
-            <Avatar.Icon
-              size={48}
-              icon={getChannelIcon(item.channel)}
-              style={{ backgroundColor: item.channel === 'WHATSAPP' ? '#25D366' : '#1877F2' }}
-              color="#fff"
-            />
-            {item.reply_from === 'HUMAN_ASSISTANT' && (
-              <View style={[styles.agentBadge, { backgroundColor: theme.colors.primary }]} />
-            )}
-          </View>
-          
-          <View style={styles.infoSection}>
-            <View style={styles.nameRow}>
-              <Text variant="titleMedium" style={styles.userName} numberOfLines={1}>
-                {item.chat_user_details?.name || t('chat.unknown_user')}
-              </Text>
-              <Text variant="labelSmall" style={{ color: theme.colors.outline }}>
-                {formatRelativeTime(item.updated_at)}
-              </Text>
-            </View>
-            
-            <View style={styles.metaRow}>
-              <View style={[
-                styles.modeBadge, 
-                { backgroundColor: item.reply_from === 'AI_ASSISTANT' ? '#9C27B0' : theme.colors.primary }
-              ]}>
-                <Icon 
-                  name={item.reply_from === 'AI_ASSISTANT' ? 'robot' : 'account'} 
-                  size={12} 
-                  color="#fff" 
-                />
-                <Text variant="labelSmall" style={styles.modeLabel}>
-                  {item.reply_from === 'AI_ASSISTANT' ? t('chat.ai_assistant') : t('chat.human_agent')}
-                </Text>
-              </View>
-              <View style={[styles.channelTag, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant, fontSize: 10 }}>
-                  {item.channel}
-                </Text>
-              </View>
-            </View>
-          </View>
-          
-          <IconButton
-            icon="chevron-right"
-            size={20}
-            style={{ marginRight: -8 }}
-            onPress={() => navigation.navigate('OrderChat', { chatSessionId: item.id })}
-          />
-        </Card.Content>
-      </Card>
-    </Surface>
-  );
+  const renderSessionItem = React.useCallback(({ item }: { item: any }) => (
+    <ChatSessionItem 
+      item={item} 
+      theme={theme} 
+      t={t} 
+      i18n={i18n}
+      onNavigate={(id: string) => navigation.navigate('OrderChat', { chatSessionId: id })}
+      formatRelativeTime={formatRelativeTime}
+      getChannelIcon={getChannelIcon}
+    />
+  ), [theme, t, i18n, navigation, formatRelativeTime, getChannelIcon]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

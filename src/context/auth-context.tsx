@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useRef, useState, useCallback, type ReactNode } from 'react';
-import { Alert, PermissionsAndroid, Platform } from 'react-native';
+import React, { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Alert } from 'react-native';
+import DeviceInfo from 'react-native-device-info';
 import apiClient, { setAuthCallbacks, setAuthToken } from '../api/client';
 import LoadingOverlay from '../components/LoadingOverlay';
-import { useTranslation } from 'react-i18next';
 import { Category, Order, Product, User, initialOrders } from '../data/mock-data';
 import { storage } from '../utils/storage';
 
@@ -38,12 +39,13 @@ type AuthContextType = {
   fetchProducts: (filters?: { search?: string; category?: number | null }) => Promise<void>;
   fetchConfig: () => Promise<void>;
   updateConfig: (updates: Partial<Config>) => Promise<boolean>;
+  syncFcmToken: (tokenOverride?: string) => Promise<void>;
 
   addProduct: (product: Omit<Product, 'id' | 'category'> & { category: number }) => Promise<boolean>;
   editProduct: (id: number, updates: Partial<Product>) => Promise<boolean>;
   deleteProduct: (id: number) => Promise<boolean>;
 
-  addCategory: (category: Omit<Category, 'id'>) => Promise<boolean>;
+  addCategory: (category: Omit<Category, 'id'>) => Promise<Category | null>;
   editCategory: (id: number, updates: Partial<Category>) => Promise<boolean>;
   deleteCategory: (id: number) => Promise<boolean>;
 
@@ -118,7 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     };
-    loadSession();
+    loadSession().catch(err => {
+      console.error('loadSession outer error:', err);
+      setLoading(false);
+    });
   }, []);
 
   const fetchCategories = useCallback(async (search?: string) => {
@@ -187,14 +192,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const syncFcmToken = useCallback(async (tokenOverride?: string) => {
+    try {
+      const token = tokenOverride || await storage.getItem('@fcm_token');
+      const deviceId = await DeviceInfo.getUniqueId();
+
+      // Get the latest session to ensure we have a valid accessToken
+      const storedSession = await storage.getItem(USER_STORAGE_KEY);
+      const session = storedSession ? JSON.parse(storedSession) : null;
+      const accessToken = session?.accessToken;
+
+
+      console.log("session::", storedSession)
+      console.log("accessToken::", accessToken)
+
+      if (accessToken) {
+        console.log('🚀 Sending FCM registration to backend...', { deviceId });
+        const response = await apiClient.post('notifications/register/', {
+          registration_id: token,
+          device_id: deviceId,
+        }, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          }
+        });
+        console.log('✅ FCM Token registered with backend:', response.status);
+      } else {
+        console.log('⚠️ Skipping FCM sync: missing token or auth', { hasToken: !!token, hasAuth: !!accessToken });
+      }
+    } catch (error: any) {
+      console.log('❌ Failed to register FCM token', {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+    }
+  }, []); // Dependencies empty because we read from storage
+
   useEffect(() => {
     if (user && user.accessToken) {
       fetchCategories();
       fetchProducts();
       fetchOrders();
       fetchConfig();
+      syncFcmToken();
     }
-  }, [user, fetchCategories, fetchProducts, fetchOrders, fetchConfig]);
+  }, [user, fetchCategories, fetchProducts, fetchOrders, fetchConfig, syncFcmToken]);
 
   const login = useCallback(async (email: string, password: string) => {
     setAuthInProgress(true);
@@ -327,10 +371,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await apiClient.post('categories/', category);
       setCategories((prev) => [...prev, response.data]);
-      return true;
+      return response.data;
     } catch (error) {
       console.error('Add category error:', error);
-      return false;
+      return null;
     }
   }, []);
 
@@ -417,6 +461,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         config,
         fetchConfig,
         updateConfig,
+        syncFcmToken,
       }}>
       {children}
       <LoadingOverlay visible={authInProgress} message={t('auth.logging_in')} />

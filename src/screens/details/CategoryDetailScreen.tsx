@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Surface, Text, TextInput, useTheme } from 'react-native-paper';
 import AppHeader from '../../components/AppHeader';
+import LoadingOverlay from '../../components/LoadingOverlay';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/auth-context';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +26,8 @@ export default function CategoryDetailScreen() {
 
   const [title, setTitle] = useState(existingCategory?.title || '');
   const [description, setDescription] = useState(existingCategory?.description || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(t('common.saving') || 'Saving...');
 
   useEffect(() => {
     if (!isNew && !existingCategory) {
@@ -43,12 +46,16 @@ export default function CategoryDetailScreen() {
       description,
     };
 
+    setLoadingMessage(t('common.saving') || 'Saving...');
+    setIsSaving(true);
     let success = false;
     if (isNew) {
-      success = await addCategory(categoryData);
+      const res = await addCategory(categoryData);
+      success = !!res;
     } else {
       success = await editCategory(Number(id), categoryData);
     }
+    setIsSaving(false);
 
     if (success) {
       navigation.goBack();
@@ -62,7 +69,10 @@ export default function CategoryDetailScreen() {
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive', onPress: async () => {
+          setLoadingMessage(t('common.deleting') || 'Deleting...');
+          setIsSaving(true);
           const success = await deleteCategory(Number(id));
+          setIsSaving(false);
           if (success) navigation.goBack();
         }
       }
@@ -148,6 +158,7 @@ export default function CategoryDetailScreen() {
           </Surface>
         </ScrollView>
       </KeyboardAvoidingView>
+      <LoadingOverlay visible={isSaving} message={loadingMessage} />
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, Image, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Image, Platform, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Chip, FAB, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -12,6 +12,57 @@ import { useAuth } from '../../context/auth-context';
 import { getImageUri } from '../../utils/url';
 
 const Icon = MaterialCommunityIcons as any;
+
+const ProductItem = React.memo(({ item, theme, t, onNavigate, onOpenViewer }: any) => (
+  <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
+    <TouchableRipple
+      onPress={() => onNavigate(item.id)}
+      style={styles.cardRipple}
+      rippleColor={theme.colors.primary + '1A'}
+    >
+      <View style={styles.cardContent}>
+        <TouchableOpacity
+          onPress={() => item.image && onOpenViewer(item.image)}
+          activeOpacity={0.8}
+          style={styles.imageContainer}
+        >
+          {item.image ? (
+            <Image source={{ uri: getImageUri(item.image) || '' }} style={styles.image} resizeMode="cover" />
+          ) : (
+            <View style={[styles.image, styles.emptyImage, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <Icon name="package-variant" size={32} color={theme.colors.primary} />
+            </View>
+          )}
+          {item.quantity <= 5 && item.quantity > 0 && (
+            <View style={[styles.lowStockBadge, { backgroundColor: '#FB7185' }]}>
+              <Text style={styles.badgeText}>{t('products.low_stock')}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.info}>
+          <Text variant="titleMedium" style={[styles.productName, { color: theme.colors.onSurface }]}>
+            {item.name}
+          </Text>
+          <Text variant="labelSmall" style={[styles.categoryName, { color: theme.colors.primary }]}>
+            {item.category?.title?.toUpperCase()}
+          </Text>
+
+          <View style={styles.priceRow}>
+            <Text variant="headlineSmall" style={[styles.priceText, { color: theme.colors.onSurface }]}>
+              ₹{parseFloat(item.price).toLocaleString()}
+            </Text>
+            <View style={[styles.stockBox, { backgroundColor: item.quantity > 0 ? theme.colors.secondary + '15' : theme.colors.error + '15' }]}>
+              <Text style={[styles.stockText, { color: item.quantity > 0 ? theme.colors.secondary : theme.colors.error }]}>
+                {item.quantity > 0 ? t('products.units_left', { count: item.quantity }) : t('products.out_of_stock')}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    </TouchableRipple>
+  </Surface>
+));
 
 export default function ProductsScreen() {
   const { t } = useTranslation();
@@ -84,6 +135,16 @@ export default function ProductsScreen() {
     </View>
   );
 
+  const renderProductItem = React.useCallback(({ item }: any) => (
+    <ProductItem 
+      item={item} 
+      theme={theme} 
+      t={t} 
+      onNavigate={(id: any) => navigation.navigate('ProductDetail', { id })}
+      onOpenViewer={openViewer}
+    />
+  ), [theme, t, navigation, openViewer]);
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <AppHeader 
@@ -144,63 +205,23 @@ export default function ProductsScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
           }
-          renderItem={({ item }) => (
-            <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
-              <TouchableRipple
-                onPress={() => navigation.navigate('ProductDetail', { id: item.id })}
-                style={styles.cardRipple}
-                rippleColor={theme.colors.primary + '1A'}
-              >
-                <View style={styles.cardContent}>
-                  <TouchableOpacity
-                    onPress={() => item.image && openViewer(item.image)}
-                    activeOpacity={0.8}
-                    style={styles.imageContainer}
-                  >
-                    {item.image ? (
-                      <Image source={{ uri: getImageUri(item.image) || '' }} style={styles.image} resizeMode="cover" />
-                    ) : (
-                      <View style={[styles.image, styles.emptyImage, { backgroundColor: theme.colors.surfaceVariant }]}>
-                        <Icon name="package-variant" size={32} color={theme.colors.primary} />
-                      </View>
-                    )}
-                    {item.quantity <= 5 && item.quantity > 0 && (
-                      <View style={[styles.lowStockBadge, { backgroundColor: '#FB7185' }]}>
-                        <Text style={styles.badgeText}>{t('products.low_stock')}</Text>
-                      </View>
-                    )}
-                  </TouchableOpacity>
-
-                  <View style={styles.info}>
-                    <Text variant="titleMedium" style={[styles.productName, { color: theme.colors.onSurface }]}>
-                      {item.name}
-                    </Text>
-                    <Text variant="labelSmall" style={[styles.categoryName, { color: theme.colors.primary }]}>
-                      {item.category?.title?.toUpperCase()}
-                    </Text>
-
-                    <View style={styles.priceRow}>
-                      <Text variant="headlineSmall" style={[styles.priceText, { color: theme.colors.onSurface }]}>
-                        ₹{parseFloat(item.price).toLocaleString()}
-                      </Text>
-                      <View style={[styles.stockBox, { backgroundColor: item.quantity > 0 ? theme.colors.secondary + '15' : theme.colors.error + '15' }]}>
-                        <Text style={[styles.stockText, { color: item.quantity > 0 ? theme.colors.secondary : theme.colors.error }]}>
-                          {item.quantity > 0 ? t('products.units_left', { count: item.quantity }) : t('products.out_of_stock')}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              </TouchableRipple>
-            </Surface>
-          )}
+          renderItem={renderProductItem}
+          getItemLayout={(_: any, index: number) => ({
+            length: 146, // 128 (card height) + 18 (gap)
+            offset: 146 * index,
+            index,
+          })}
+          initialNumToRender={8}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews={Platform.OS === 'android'}
         />
       )}
 
       <FAB
         icon="plus"
         style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 32 + insets.bottom }]}
-        onPress={() => navigation.navigate('ProductDetail', { id: 'new' })}
+        onPress={() => navigation.navigate('ProductDetail', { id: 'new', categoryId: selectedCategoryId })}
         color="#FFFFFF"
         label={t('common.add') || 'Add'}
       />

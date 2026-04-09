@@ -2,12 +2,13 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Button, Menu, Surface, Text, TextInput, useTheme, IconButton } from 'react-native-paper';
+import { Button, Menu, Surface, Text, TextInput, useTheme, IconButton, Portal, Dialog } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import ImageViewer from '../../components/ImageViewer';
 import AppHeader from '../../components/AppHeader';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getImageUri } from '../../utils/url';
+import LoadingOverlay from '../../components/LoadingOverlay';
 import { useAuth } from '../../context/auth-context';
 import { useTranslation } from 'react-i18next';
 
@@ -17,11 +18,11 @@ export default function ProductDetailScreen() {
   const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { id } = route.params || { id: 'new' };
+  const { id, categoryId: initialCategoryId } = route.params || { id: 'new', categoryId: null };
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const { products, categories, addProduct, editProduct, deleteProduct } = useAuth();
+  const { products, categories, addProduct, editProduct, deleteProduct, addCategory } = useAuth();
 
   const isNew = id === 'new';
   const existingProduct = !isNew ? products.find(p => p.id === Number(id)) : null;
@@ -31,10 +32,34 @@ export default function ProductDetailScreen() {
   const [price, setPrice] = useState(existingProduct?.price?.toString() || '');
   const [quantity, setQuantity] = useState(existingProduct?.quantity?.toString() || '0');
   const [image, setImage] = useState(existingProduct?.image || '');
-  const [categoryId, setCategoryId] = useState<number | null>(existingProduct?.category?.id || (categories[0]?.id ?? null));
+  const [categoryId, setCategoryId] = useState<number | null>(existingProduct?.category?.id || initialCategoryId || (categories[0]?.id ?? null));
 
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [categoryDialogVisible, setCategoryDialogVisible] = useState(false);
+  const [categorySearchQuery, setCategorySearchQuery] = useState('');
   const [viewerVisible, setViewerVisible] = useState(false);
+  
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [newCategoryTitle, setNewCategoryTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState(t('common.saving') || 'Saving...');
+
+  const handleAddCategory = async () => {
+    if (!newCategoryTitle.trim()) {
+      Alert.alert(t('common.error'), 'Category name cannot be empty');
+      return;
+    }
+    setLoadingMessage('Saving...');
+    setIsSaving(true);
+    const newCat = await addCategory({ title: newCategoryTitle.trim(), description: '' });
+    if (newCat) {
+      setCategoryId(newCat.id);
+      setCategoryModalVisible(false);
+      setNewCategoryTitle('');
+    } else {
+      Alert.alert(t('common.error'), t('common.error'));
+    }
+    setIsSaving(false);
+  };
 
   useEffect(() => {
     if (!isNew && !existingProduct) {
@@ -83,12 +108,15 @@ export default function ProductDetailScreen() {
       attributes: existingProduct?.attributes || {},
     };
 
+    setLoadingMessage(t('common.saving') || 'Saving...');
+    setIsSaving(true);
     let success = false;
     if (isNew) {
       success = await addProduct(productData);
     } else {
       success = await editProduct(Number(id), productData);
     }
+    setIsSaving(false);
 
     if (success) {
       navigation.goBack();
@@ -102,7 +130,10 @@ export default function ProductDetailScreen() {
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive', onPress: async () => {
+          setLoadingMessage(t('common.deleting') || 'Deleting...');
+          setIsSaving(true);
           const success = await deleteProduct(Number(id));
+          setIsSaving(false);
           if (success) navigation.goBack();
         }
       }
@@ -166,36 +197,18 @@ export default function ProductDetailScreen() {
                 left={<TextInput.Icon icon="package-variant-closed" color={theme.colors.primary} />}
               />
 
-              <Menu
-                visible={menuVisible}
-                onDismiss={() => setMenuVisible(false)}
-                anchor={
-                  <TouchableOpacity 
-                    onPress={() => setMenuVisible(true)}
-                    style={[styles.menuAnchor, { borderColor: theme.colors.outline, borderWidth: 1 }]}
-                  >
-                    <View style={styles.menuAnchorLeft}>
-                      <Icon name="tag-outline" size={24} color={theme.colors.primary} style={{ marginRight: 12 }} />
-                      <Text style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
-                        {selectedCategory ? selectedCategory.title : t('product_detail.select_category')}
-                      </Text>
-                    </View>
-                    <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
-                  </TouchableOpacity>
-                }
-                contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: 18 }}
+              <TouchableOpacity 
+                onPress={() => setCategoryDialogVisible(true)}
+                style={[styles.menuAnchor, { borderColor: theme.colors.outline, borderWidth: 1 }]}
               >
-                {categories.map((c) => (
-                  <Menu.Item
-                    key={c.id}
-                    onPress={() => {
-                      setCategoryId(c.id);
-                      setMenuVisible(false);
-                    }}
-                    title={c.title}
-                  />
-                ))}
-              </Menu>
+                <View style={styles.menuAnchorLeft}>
+                  <Icon name="tag-outline" size={24} color={theme.colors.primary} style={{ marginRight: 12 }} />
+                  <Text style={{ color: theme.colors.onSurface, fontWeight: '500' }}>
+                    {selectedCategory ? selectedCategory.title : t('product_detail.select_category')}
+                  </Text>
+                </View>
+                <Icon name="chevron-down" size={20} color={theme.colors.onSurfaceVariant} />
+              </TouchableOpacity>
 
               <View style={styles.rowInputs}>
                 <TextInput
@@ -267,6 +280,74 @@ export default function ProductDetailScreen() {
         imageUri={getImageUri(image)}
         onClose={() => setViewerVisible(false)}
       />
+
+      <Portal>
+        <Dialog visible={categoryDialogVisible} onDismiss={() => setCategoryDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24, maxHeight: '80%' }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Select Category</Dialog.Title>
+          <Dialog.Content style={{ paddingBottom: 0 }}>
+            <TextInput
+              placeholder="Search categories..."
+              value={categorySearchQuery}
+              onChangeText={setCategorySearchQuery}
+              mode="outlined"
+              style={{ backgroundColor: 'transparent', marginBottom: 12 }}
+              outlineStyle={{ borderRadius: 12 }}
+              left={<TextInput.Icon icon="magnify" color={theme.colors.primary} />}
+            />
+            <ScrollView style={{ maxHeight: 400 }}>
+              <TouchableOpacity
+                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                onPress={() => {
+                  setCategoryDialogVisible(false);
+                  setCategorySearchQuery('');
+                  setCategoryModalVisible(true);
+                }}
+              >
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>+ Add New Category</Text>
+              </TouchableOpacity>
+              {categories
+                .filter(c => (c.title || '').toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                .map((c) => (
+                  <TouchableOpacity
+                    key={c.id}
+                    style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                    onPress={() => {
+                      setCategoryId(c.id);
+                      setCategoryDialogVisible(false);
+                      setCategorySearchQuery('');
+                    }}
+                  >
+                    <Text style={{ color: theme.colors.onSurface, fontSize: 16 }}>{c.title}</Text>
+                  </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCategoryDialogVisible(false)} textColor={theme.colors.onSurfaceVariant}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={categoryModalVisible} onDismiss={() => setCategoryModalVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24 }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>Add New Category</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label="Category Name"
+              value={newCategoryTitle}
+              onChangeText={setNewCategoryTitle}
+              mode="outlined"
+              autoFocus
+              outlineStyle={{ borderRadius: 18 }}
+              style={{ backgroundColor: 'transparent' }}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setCategoryModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
+            <Button onPress={handleAddCategory} mode="contained" style={{ borderRadius: 20 }}>Save</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
+      <LoadingOverlay visible={isSaving} message={loadingMessage} />
     </View>
   );
 }

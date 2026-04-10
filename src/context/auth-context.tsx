@@ -22,6 +22,12 @@ export type Config = {
   model_name?: string;
 };
 
+export type TodayStats = {
+  no_of_orders: number;
+  earnings: number;
+};
+
+
 type AuthContextType = {
   user: User | null;
   loading: boolean;
@@ -52,10 +58,13 @@ type AuthContextType = {
   deleteCategory: (id: number) => Promise<boolean>;
 
   fetchOrders: () => Promise<void>;
+  fetchTodayStats: () => Promise<void>;
   addOrder: (order: Omit<Order, 'id' | 'created_at' | 'user'>) => Promise<boolean>;
   editOrder: (id: number, updates: Partial<Order>) => Promise<boolean>;
   deleteOrder: (id: number) => Promise<boolean>;
+  todayStats: TodayStats;
 };
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -75,6 +84,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
+  const [todayStats, setTodayStats] = useState<TodayStats>({ no_of_orders: 0, earnings: 0 });
+
 
   const logout = useCallback(async () => {
     try {
@@ -175,6 +186,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const fetchTodayStats = useCallback(async () => {
+    try {
+      const response = await apiClient.get('orders/today_stats/');
+      setTodayStats(response.data);
+    } catch (error) {
+      console.error('Fetch today stats error:', error);
+    }
+  }, []);
+
+
   const fetchChatUsers = useCallback(async () => {
     try {
       const response = await apiClient.get('chat-users/');
@@ -247,11 +268,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchCategories();
       fetchProducts();
       fetchOrders();
+      fetchTodayStats();
       fetchChatUsers();
       fetchConfig();
       syncFcmToken();
     }
-  }, [user, fetchCategories, fetchProducts, fetchOrders, fetchConfig, syncFcmToken]);
+  }, [user, fetchCategories, fetchProducts, fetchOrders, fetchTodayStats, fetchConfig, syncFcmToken]);
+
 
   const login = useCallback(async (email: string, password: string) => {
     setAuthInProgress(true);
@@ -477,7 +500,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchConfig,
         updateConfig,
         syncFcmToken,
+        fetchTodayStats,
+        todayStats,
       }}>
+
       {children}
       <LoadingOverlay visible={authInProgress} message={t('auth.logging_in')} />
     </AuthContext.Provider>

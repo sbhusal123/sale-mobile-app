@@ -13,7 +13,8 @@ const Icon = MaterialCommunityIcons as any;
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { user, orders, chatUsers, fetchCategories, fetchProducts, fetchOrders, fetchChatUsers, fetchConfig } = useAuth();
+  const { user, orders, chatUsers, fetchCategories, fetchProducts, fetchOrders, fetchChatUsers, fetchConfig, fetchTodayStats, todayStats } = useAuth();
+
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -31,7 +32,9 @@ export default function HomeScreen() {
         fetchOrders(),
         fetchChatUsers(),
         fetchConfig(),
+        fetchTodayStats(),
       ]);
+
     } finally {
       setIsLoading(false);
       setRefreshing(false);
@@ -44,8 +47,9 @@ export default function HomeScreen() {
     }, [onRefresh])
   );
 
-  const totalOrders = orders?.length || 0;
-  const totalSales = orders?.reduce((acc: number, o: any) => acc + parseFloat(o.total_price || 0), 0) || 0;
+  const totalOrders = todayStats.no_of_orders;
+  const totalSales = todayStats.earnings;
+
   const totalCustomers = chatUsers?.length || 0;
 
   const navItems = React.useMemo(() => [

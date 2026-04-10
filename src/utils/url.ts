@@ -6,9 +6,14 @@ import { MEDIA_BASE_URL } from '../api/client';
  */
 export const getImageUri = (path: string | null): string | null => {
   if (!path) return null;
+
+  // Upgrade HTTP to HTTPS to avoid Cleartext Traffic errors in Release builds
+  if (path.startsWith('http://')) {
+    path = path.replace('http://', 'https://');
+  }
   
   // If it's already a full URL or a local file URI, return it as is
-  if (path.startsWith('http') || path.startsWith('file://') || path.startsWith('data:')) {
+  if (path.startsWith('http') || path.startsWith('file://') || path.startsWith('data:') || path.startsWith('content://')) {
     return path;
   }
   

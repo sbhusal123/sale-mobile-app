@@ -13,7 +13,7 @@ const Icon = MaterialCommunityIcons as any;
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { user, orders, fetchCategories, fetchProducts, fetchOrders, fetchConfig } = useAuth();
+  const { user, orders, chatUsers, fetchCategories, fetchProducts, fetchOrders, fetchChatUsers, fetchConfig } = useAuth();
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -29,6 +29,7 @@ export default function HomeScreen() {
         fetchCategories(),
         fetchProducts(),
         fetchOrders(),
+        fetchChatUsers(),
         fetchConfig(),
       ]);
     } finally {
@@ -45,11 +46,13 @@ export default function HomeScreen() {
 
   const totalOrders = orders?.length || 0;
   const totalSales = orders?.reduce((acc: number, o: any) => acc + parseFloat(o.total_price || 0), 0) || 0;
+  const totalCustomers = chatUsers?.length || 0;
 
   const navItems = React.useMemo(() => [
     { title: t('home.products'), description: t('home.manage_stock'), screen: 'Products', icon: 'package-variant-closed', color: theme.colors.primary },
     { title: t('home.categories'), description: t('home.view_category'), screen: 'Categories', icon: 'view-grid', color: '#10B981' },
     { title: t('home.orders'), description: t('home.view_orders'), screen: 'Orders', icon: 'cart', color: '#F59E0B' },
+    { title: t('home.customers'), description: t('home.manage_customers'), screen: 'ChatUsers', icon: 'account-group', color: theme.colors.primary },
     { title: t('home.conversations'), description: t('home.inquiry_chat'), screen: 'Conversations', icon: 'chat-processing', color: '#6366F1' },
     { title: t('home.account'), description: t('account.title'), screen: 'Account', icon: 'account-circle', color: '#EC4899' },
   ], [t, theme.colors]);
@@ -71,6 +74,23 @@ export default function HomeScreen() {
             <ShimmerPlaceholder width="70%" height={20} />
           </View>
         </Surface>
+        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, height: 80 }]}>
+          <ShimmerPlaceholder width={44} height={44} borderRadius={14} />
+          <View style={{ flex: 1 }}>
+            <ShimmerPlaceholder width="50%" height={10} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="70%" height={20} />
+          </View>
+        </Surface>
+      </View>
+      <View style={[styles.statsContainer, { marginTop: 12 }]}>
+        <Surface elevation={1} style={[styles.statCard, { backgroundColor: theme.colors.surface, height: 80 }]}>
+          <ShimmerPlaceholder width={44} height={44} borderRadius={14} />
+          <View style={{ flex: 1 }}>
+            <ShimmerPlaceholder width="30%" height={10} style={{ marginBottom: 6 }} />
+            <ShimmerPlaceholder width="50%" height={20} />
+          </View>
+        </Surface>
+        <View style={{ flex: 1 }} />
       </View>
 
       <View style={styles.sectionHeader}>
@@ -146,6 +166,19 @@ export default function HomeScreen() {
                   <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>₹{totalSales.toLocaleString()}</Text>
                 </View>
               </Surface>
+            </View>
+
+            <View style={[styles.statsContainer, { marginTop: 12 }]}>
+              <Surface elevation={2} style={[styles.statCard, { backgroundColor: theme.colors.surface }]}>
+                <View style={[styles.statIconBox, { backgroundColor: theme.colors.secondary + '15' }]}>
+                  <Icon name="account-group" size={22} color={theme.colors.secondary} />
+                </View>
+                <View style={styles.statInfo}>
+                  <Text style={[styles.statTitle, { color: theme.colors.onSurfaceVariant }]}>{t('home.customers')}</Text>
+                  <Text style={[styles.statValue, { color: theme.colors.onSurface }]}>{totalCustomers}</Text>
+                </View>
+              </Surface>
+              <View style={{ flex: 1 }} />
             </View>
 
             <View style={styles.sectionHeader}>

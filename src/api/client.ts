@@ -2,6 +2,9 @@ import axios from 'axios';
 import { storage } from '../utils/storage';
 
 
+// export const API_BASE_URL = 'http://192.168.1.137:8000/api/';
+// export const WS_BASE_URL = 'ws://192.168.1.137:8000/ws/chat/';
+// export const MEDIA_BASE_URL = 'http://192.168.1.137:8000/media/';
 
 export const API_BASE_URL = 'https://chatbot.tekkops.com/api/';
 export const WS_BASE_URL = 'wss://chatbot.tekkops.com/ws/chat/';

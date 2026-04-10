@@ -160,7 +160,7 @@ export default function ProductDetailScreen() {
           <View style={styles.imageSection}>
             {image ? (
               <View style={[styles.imageCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
-                <TouchableOpacity onPress={() => setViewerVisible(true)} style={styles.imageTouch}>
+                <TouchableOpacity onPress={() => Alert.alert('Debug URL', getImageUri(image) || 'null')} style={styles.imageTouch}>
                   <Image source={{ uri: getImageUri(image) || '' }} style={styles.heroImage} resizeMode="cover" />
                 </TouchableOpacity>
                 <TouchableOpacity 

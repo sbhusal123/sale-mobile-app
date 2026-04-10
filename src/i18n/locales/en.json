@@ -11,6 +11,7 @@
     "edit": "Edit",
     "add": "Add",
     "delete": "Delete",
+    "deleting": "Deleting...",
     "back": "Back"
   },
   "auth": {
@@ -50,7 +51,9 @@
     "manage_stock": "Manage stock.",
     "view_category": "View category details.",
     "view_orders": "View order history.",
-    "inquiry_chat": "Inquiry chats."
+    "inquiry_chat": "Inquiry chats.",
+    "customers": "Customers",
+    "manage_customers": "Manage your customer base."
   },
   "products": {
     "title": "Products",
@@ -72,7 +75,9 @@
     "pending": "Pending",
     "units": "Units",
     "unknown": "Unknown",
-    "add_order": "Add Order"
+    "add_order": "Add Order",
+    "chat_show": "Show Chat",
+    "chat": "Chat"
   },
   "chat": {
     "title": "Conversations",
@@ -145,7 +150,13 @@
     "saved_success": "Order saved successfully",
     "pending": "Pending",
     "delivering": "Delivering",
-    "completed": "Completed"
+    "completed": "Completed",
+    "customer_info": "Customer",
+    "customer_name": "Customer Name",
+    "customer_email": "Customer Email",
+    "select_customer": "Select Customer",
+    "search_customers": "Search customers...",
+    "create_new_customer": "Create New Customer"
   },
   "account": {
     "title": "Account & Settings",
@@ -178,6 +189,7 @@
     "app_title": "Sales Assistant",
     "app_subtitle": "Smart Digital Management",
     "logout_confirm_title": "Logout",
-    "logout_confirm_msg": "Are you sure you want to logout?"
+    "logout_confirm_msg": "Are you sure you want to logout?",
+    "chat_users": "Customers"
   }
 }

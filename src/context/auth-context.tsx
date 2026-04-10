@@ -30,6 +30,7 @@ type AuthContextType = {
   categories: Category[];
   products: Product[];
   orders: Order[];
+  chatUsers: any[];
   config: Config | null;
 
   login: (email: string, password: string) => Promise<boolean>;
@@ -38,6 +39,7 @@ type AuthContextType = {
   fetchCategories: (search?: string) => Promise<void>;
   fetchProducts: (filters?: { search?: string; category?: number | null }) => Promise<void>;
   fetchConfig: () => Promise<void>;
+  fetchChatUsers: () => Promise<void>;
   updateConfig: (updates: Partial<Config>) => Promise<boolean>;
   syncFcmToken: (tokenOverride?: string) => Promise<void>;
 
@@ -71,6 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [chatUsers, setChatUsers] = useState<any[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
 
   const logout = useCallback(async () => {
@@ -172,6 +175,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const fetchChatUsers = useCallback(async () => {
+    try {
+      const response = await apiClient.get('chat-users/');
+      setChatUsers(response.data?.results || response.data || []);
+    } catch (error: any) {
+      console.error('Fetch chat users error:', error);
+    }
+  }, []);
+
   const fetchConfig = useCallback(async () => {
     try {
       const response = await apiClient.get('config/');
@@ -235,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       fetchCategories();
       fetchProducts();
       fetchOrders();
+      fetchChatUsers();
       fetchConfig();
       syncFcmToken();
     }
@@ -290,7 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const formData = new FormData();
       Object.keys(product).forEach((key) => {
         const value = (product as any)[key];
-        if (key === 'image' && value && value.startsWith('file://')) {
+        if (key === 'image' && value && (value.startsWith('file://') || value.startsWith('content://'))) {
           formData.append('image', {
             uri: value,
             type: 'image/jpeg',
@@ -314,14 +327,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const editProduct = useCallback(async (id: number, updates: Partial<Product>) => {
     try {
-      const hasNewImage = !!(updates.image && updates.image.startsWith('file://'));
+      const hasNewImage = !!(updates.image && (updates.image.startsWith('file://') || updates.image.startsWith('content://')));
       let response;
 
       if (hasNewImage) {
         const formData = new FormData();
         Object.keys(updates).forEach((key) => {
           const value = (updates as any)[key];
-          if (key === 'image' && value && value.startsWith('file://')) {
+          if (key === 'image' && value && (value.startsWith('file://') || value.startsWith('content://'))) {
             formData.append('image', {
               uri: value,
               type: 'image/jpeg',
@@ -339,7 +352,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } else {
         const jsonPayload: any = { ...updates };
-        if (jsonPayload.image && typeof jsonPayload.image === 'string' && !jsonPayload.image.startsWith('file://')) {
+        if (jsonPayload.image && typeof jsonPayload.image === 'string' && !(jsonPayload.image.startsWith('file://') || jsonPayload.image.startsWith('content://'))) {
           delete jsonPayload.image;
         }
         if (jsonPayload.category && typeof jsonPayload.category === 'object') {
@@ -449,6 +462,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         fetchCategories,
         fetchProducts,
         fetchOrders,
+        fetchChatUsers,
         addProduct,
         editProduct,
         deleteProduct,
@@ -459,6 +473,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         editOrder,
         deleteOrder,
         config,
+        chatUsers,
         fetchConfig,
         updateConfig,
         syncFcmToken,

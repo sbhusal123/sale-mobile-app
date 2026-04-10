@@ -2,7 +2,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, Image, Platform, RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Chip, FAB, Searchbar, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import { Chip, FAB, Searchbar, Surface, Text, TouchableRipple, useTheme, Menu, Portal } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppHeader from '../../components/AppHeader';
@@ -13,10 +13,12 @@ import { getImageUri } from '../../utils/url';
 
 const Icon = MaterialCommunityIcons as any;
 
-const ProductItem = React.memo(({ item, theme, t, onNavigate, onOpenViewer }: any) => (
+const ProductItem = React.memo(({ item, theme, t, onNavigate, onOpenViewer, onLongPress }: any) => (
   <Surface elevation={2} style={[styles.cardSurface, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
     <TouchableRipple
       onPress={() => onNavigate(item.id)}
+      onLongPress={(e) => onLongPress(item, e)}
+      delayLongPress={500}
       style={styles.cardRipple}
       rippleColor={theme.colors.primary + '1A'}
     >
@@ -78,6 +80,11 @@ export default function ProductsScreen() {
   const [viewerVisible, setViewerVisible] = React.useState(false);
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
 
+  // Menu State
+  const [menuVisible, setMenuVisible] = React.useState(false);
+  const [menuAnchor, setMenuAnchor] = React.useState({ x: 0, y: 0 });
+  const [selectedProduct, setSelectedProduct] = React.useState<any>(null);
+
   const debounceTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const loadProducts = async (search = searchQuery, category = selectedCategoryId) => {
@@ -113,8 +120,22 @@ export default function ProductsScreen() {
   };
 
   const openViewer = (uri: string) => {
-    setSelectedImage(getImageUri(uri));
     setViewerVisible(true);
+  };
+
+  const handleLongPress = (product: any, event: any) => {
+    const { nativeEvent } = event;
+    const anchor = { x: nativeEvent.pageX, y: nativeEvent.pageY };
+    setSelectedProduct(product);
+    setMenuAnchor(anchor);
+    setMenuVisible(true);
+  };
+
+  const handleCreateOrder = () => {
+    setMenuVisible(false);
+    if (selectedProduct) {
+      navigation.navigate('OrderDetail', { id: 'new', productId: selectedProduct.id });
+    }
   };
 
   const renderShimmer = () => (
@@ -142,6 +163,7 @@ export default function ProductsScreen() {
       t={t} 
       onNavigate={(id: any) => navigation.navigate('ProductDetail', { id })}
       onOpenViewer={openViewer}
+      onLongPress={handleLongPress}
     />
   ), [theme, t, navigation, openViewer]);
 
@@ -231,6 +253,24 @@ export default function ProductsScreen() {
         imageUri={selectedImage}
         onClose={() => setViewerVisible(false)}
       />
+
+      <Menu
+        visible={menuVisible}
+        onDismiss={() => setMenuVisible(false)}
+        anchor={menuAnchor}
+        contentStyle={{ backgroundColor: theme.colors.surface, borderRadius: 12 }}
+      >
+        <Menu.Item 
+          onPress={handleCreateOrder} 
+          title={t('order_detail.create_new_order', 'Create an order')} 
+          leadingIcon="cart-plus"
+        />
+        <Menu.Item 
+          onPress={() => { setMenuVisible(false); navigation.navigate('ProductDetail', { id: selectedProduct.id }); }} 
+          title={t('common.edit', 'Edit Product')} 
+          leadingIcon="pencil-outline"
+        />
+      </Menu>
     </View>
   );
 }

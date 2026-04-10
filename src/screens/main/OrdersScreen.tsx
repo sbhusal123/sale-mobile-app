@@ -57,9 +57,21 @@ const OrderItem = React.memo(({ item, theme, t, products, onNavigate, onChat }: 
                 <Icon name="package-variant" size={18} color={theme.colors.primary} />
               </View>
               <Text variant="bodyMedium" style={[styles.productText, { color: theme.colors.onSurface }]}>
-                {products.find((p: any) => p.id === item.product)?.name || t('orders.unknown')}
-                <Text style={{ opacity: 0.5 }}> • </Text>
-                {item.quantity} {t('orders.units')}
+                {(() => {
+                  const firstItem = item.items?.[0];
+                  const otherCount = (item.items?.length || 0) - 1;
+                  const prodName = products.find((p: any) => p.id === firstItem?.product)?.name || t('orders.unknown');
+                  const totalQty = item.items?.reduce((acc: number, i: any) => acc + (i.quantity || 0), 0) || 0;
+                  
+                  return (
+                    <>
+                      {prodName}
+                      {otherCount > 0 && <Text style={{ color: theme.colors.primary, fontWeight: '900' }}> +{otherCount} more</Text>}
+                      <Text style={{ opacity: 0.5 }}> • </Text>
+                      {totalQty} {t('orders.units')}
+                    </>
+                  );
+                })()}
               </Text>
             </View>
 
@@ -81,12 +93,23 @@ const OrderItem = React.memo(({ item, theme, t, products, onNavigate, onChat }: 
                   {item.location}
                 </Text>
               </View>
+
+              {item.order_count !== undefined && (
+                <View style={[styles.orderCountBadgeSmall, { backgroundColor: theme.colors.error + '10' }]}>
+                  <Icon name="shopping-outline" size={14} color={theme.colors.error} />
+                  <Text variant="labelSmall" style={{ color: theme.colors.error, fontWeight: '800', marginLeft: 4 }}>
+                    {item.order_count}
+                  </Text>
+                </View>
+              )}
+
               <IconButton
                 icon="message-text-outline"
                 size={20}
-                iconColor={theme.colors.primary}
-                onPress={() => onChat(item.session_id)}
-                style={styles.chatBtn}
+                iconColor={item.chat_session ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                disabled={!item.chat_session}
+                onPress={() => item.chat_session && onChat()}
+                style={[styles.chatBtn, !item.chat_session && { opacity: 0.3 }]}
               />
             </View>
           </View>
@@ -292,6 +315,14 @@ const styles = StyleSheet.create({
   chatBtn: {
     margin: 0,
     backgroundColor: 'transparent',
+  },
+  orderCountBadgeSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
   },
   fab: {
     position: 'absolute',

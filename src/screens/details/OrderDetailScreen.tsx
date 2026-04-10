@@ -2,7 +2,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
-import { Button, Dialog, Divider, Menu, Portal, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Dialog, Divider, Portal, Surface, Text, TextInput, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import apiClient from '../../api/client';
@@ -16,20 +16,22 @@ export default function OrderDetailScreen() {
   const { t } = useTranslation();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
-  const { id } = route.params || { id: 'new' };
+  const { id, customerId, productId: initialProductId } = route.params || { id: 'new' };
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const { orders, products, addOrder, editOrder, deleteOrder } = useAuth();
+  const { orders, products, addOrder, editOrder, deleteOrder, user: merchantUser } = useAuth();
 
   const isNew = id === 'new';
   const existingOrder = !isNew ? orders.find(o => o.id === Number(id)) : null;
 
-  const [productId, setProductId] = useState<number | null>(existingOrder?.product || null);
-  const [qty, setQty] = useState(existingOrder?.quantity?.toString() || '1');
-  const [totalPrice, setTotalPrice] = useState(existingOrder?.total_price?.toString() || '');
+  const [orderItems, setOrderItems] = useState<any[]>(
+    existingOrder?.items ||
+    (initialProductId ? [{ product: Number(initialProductId), quantity: 1, price: products.find(p => p.id === Number(initialProductId))?.price || '0' }] : [])
+  );
+  const [totalPrice, setTotalPrice] = useState(existingOrder?.total_price?.toString() || '0');
   const [location, setLocation] = useState(existingOrder?.location || '');
-  const [phone, setPhone] = useState(existingOrder?.phone || '');
+  const [phone, setPhone] = useState(existingOrder?.phone || (existingOrder as any)?.chat_user?.phone || '');
   const [specialInstructions, setSpecialInstructions] = useState(existingOrder?.special_instructions || '');
   const [orderStatus, setOrderStatus] = useState(existingOrder?.order_status || 'PENDING');
 
@@ -46,7 +48,7 @@ export default function OrderDetailScreen() {
 
   const [customerName, setCustomerName] = useState(existingOrder?.chat_user?.name || (existingOrder as any)?.user?.name || '');
   const [customerEmail, setCustomerEmail] = useState(existingOrder?.chat_user?.email || (existingOrder as any)?.user?.email || '');
-  const [selectedChatUserId, setSelectedChatUserId] = useState<number | null>(existingOrder?.chat_user?.id || null);
+  const [selectedChatUserId, setSelectedChatUserId] = useState<string | null>(existingOrder?.chat_user?.id ? String(existingOrder.chat_user.id) : (customerId ? String(customerId) : null));
 
   useEffect(() => {
     if (!isNew && id) {
@@ -58,9 +60,22 @@ export default function OrderDetailScreen() {
 
   useEffect(() => {
     apiClient.get('chat-users/')
-      .then(res => setChatUsers(res.data || []))
+      .then(res => {
+        const users = res.data || [];
+        setChatUsers(users);
+
+        // If we have a pre-selected customerId and no existing order info, pre-fill from user details
+        if (customerId && isNew && !customerName) {
+          const user = users.find((u: any) => String(u.id) === String(customerId));
+          if (user) {
+            setCustomerName(user.name || '');
+            setCustomerEmail(user.email || '');
+            setPhone(user.phone || '');
+          }
+        }
+      })
       .catch(err => console.error("Error fetching chat users:", err));
-  }, []);
+  }, [customerId, isNew]);
 
   useEffect(() => {
     if (!isNew && !existingOrder) {
@@ -68,37 +83,81 @@ export default function OrderDetailScreen() {
     }
   }, [isNew, existingOrder]);
 
-  const selectedProduct = products.find(p => p.id === productId);
+  // Auto-calculate total price
+  useEffect(() => {
+    const total = orderItems.reduce((acc, item) => {
+      return acc + (parseFloat(item.price || '0') * (item.quantity || 0));
+    }, 0).toFixed(2);
+    setTotalPrice(total.endsWith('.00') ? total.slice(0, -3) : total);
+  }, [orderItems]);
+
+  const addOrderItem = (product: any) => {
+    const existing = orderItems.find(item => item.product === product.id);
+    if (existing) {
+      setOrderItems(orderItems.map(item =>
+        item.product === product.id ? { ...item, quantity: item.quantity + 1 } : item
+      ));
+    } else {
+      setOrderItems([...orderItems, { product: product.id, quantity: 1, price: product.price }]);
+    }
+  };
+
+  const removeOrderItem = (productId: number) => {
+    setOrderItems(orderItems.filter(item => item.product !== productId));
+  };
+
+  const updateItemQuantity = (productId: number, newQty: string) => {
+    const q = parseInt(newQty, 10) || 0;
+    setOrderItems(orderItems.map(item =>
+      item.product === productId ? { ...item, quantity: q } : item
+    ));
+  };
 
   const handleSave = async () => {
-    if (!productId) {
-      Alert.alert(t('common.error'), (t('order_detail.product') || 'Product') + ' ' + (t('common.required') || 'is required'));
+    if (orderItems.length === 0) {
+      Alert.alert(t('common.error'), t('order_detail.select_product', 'Please select at least one product'));
       return;
     }
     if (!selectedChatUserId && (!customerName || !phone)) {
       Alert.alert(t('common.error'), 'Customer Name and Phone are required for new customer');
       return;
     }
+    if (!phone) {
+      Alert.alert(t('common.error'), (t('order_detail.phone') || 'Phone Number') + ' ' + (t('common.required') || 'is required'));
+      return;
+    }
 
     const data: any = {
-      product: productId,
-      quantity: parseInt(qty, 10) || 1,
-      total_price: totalPrice || "0",
-      location,
-      phone,
-      name: customerName,
-      email: customerEmail,
-      special_instructions: specialInstructions,
-      order_status: orderStatus,
+      items: orderItems.map(item => ({
+        product: parseInt(String(item.product), 10),
+        quantity: parseInt(String(item.quantity), 10) || 0,
+        price: parseFloat(String(item.price || "0.00")) * (parseInt(String(item.quantity), 10) || 0.00)
+      })),
+      // Top-level fields for backward compatibility/satisfying root-level validators
+      product: orderItems[0] ? parseInt(String(orderItems[0].product), 10) : 0,
+      quantity: orderItems[0] ? (parseInt(String(orderItems[0].quantity), 10) || 0) : 0,
+      price: orderItems[0] ? (parseFloat(String(orderItems[0].price || "0.00")) * (parseInt(String(orderItems[0].quantity), 10) || 0)) : 0,
+
+      total_price: parseFloat(String(totalPrice || "0")),
+      location: String(location),
+      phone: String(phone),
+      special_instructions: specialInstructions ? String(specialInstructions) : null,
+      order_status: String(orderStatus),
+      user: merchantUser?.id ? parseInt(merchantUser.id, 10) : 0,
       chat_user: selectedChatUserId || null,
       chat_session: existingOrder?.chat_session || null,
     };
+
+    console.log("data", data);
+
 
     setLoadingMessage(t('common.saving') || 'Saving...');
     setIsSaving(true);
     let success = false;
     if (isNew) {
       success = await addOrder(data);
+
+      console.log(success, "success")
     } else {
       success = await editOrder(Number(id), data);
     }
@@ -155,6 +214,9 @@ export default function OrderDetailScreen() {
     ]);
   };
 
+  const selectedCustomer = chatUsers.find(u => String(u.id) === String(selectedChatUserId));
+  const customerUser = selectedCustomer || fetchedOrder?.chat_user || (existingOrder as any)?.user;
+
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'COMPLETED': return '#10B981';
@@ -163,8 +225,6 @@ export default function OrderDetailScreen() {
       default: return '#F59E0B';
     }
   };
-
-  const customerUser = fetchedOrder?.chat_user || (existingOrder as any)?.user;
 
   console.log("customerUser", customerUser);
 
@@ -201,43 +261,71 @@ export default function OrderDetailScreen() {
 
           <Surface elevation={2} style={[styles.formCard, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outline, borderWidth: 1 }]}>
             <View style={styles.inputGap}>
-              <TouchableOpacity onPress={() => setProductDialogVisible(true)} activeOpacity={0.7}>
-                <View pointerEvents="none">
-                  <TextInput
-                    label={t('order_detail.product', 'Product') + ' *'}
-                    value={selectedProduct ? selectedProduct.name : ''}
-                    mode="outlined"
-                    style={styles.input}
-                    outlineStyle={{ borderRadius: 18 }}
-                    left={<TextInput.Icon icon="package-variant" color={theme.colors.primary} />}
-                    right={<TextInput.Icon icon="chevron-down" color={theme.colors.onSurfaceVariant} />}
-                    editable={false}
-                  />
+              <View style={styles.itemsSection}>
+                <View style={[styles.sectionHeader, { marginBottom: 12 }]}>
+                  <Icon name="package-variant-closed" size={20} color={theme.colors.primary} />
+                  <Text variant="titleSmall" style={{ fontWeight: '900' }}>{t('home.products', 'Products')}</Text>
                 </View>
-              </TouchableOpacity>
 
-              <View style={styles.rowInputs}>
-                <TextInput
-                  label={t('order_detail.quantity')}
-                  value={qty}
-                  onChangeText={setQty}
-                  keyboardType="numeric"
+                {orderItems.map((item, index) => {
+                  const product = products.find(p => p.id === item.product);
+                  return (
+                    <View key={item.product} style={[styles.itemRow, index > 0 && { marginTop: 12 }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text variant="bodyMedium" style={{ fontWeight: '700' }}>{product?.name || 'Unknown Product'}</Text>
+                        <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }}>₹{item.price} x {item.quantity}</Text>
+                      </View>
+                      <View style={styles.itemActions}>
+                        <TextInput
+                          value={item.quantity.toString()}
+                          onChangeText={(val) => updateItemQuantity(item.product, val)}
+                          keyboardType="numeric"
+                          mode="outlined"
+                          dense
+                          style={styles.qtyInput}
+                          outlineStyle={{ borderRadius: 12 }}
+                        />
+                        <TouchableOpacity onPress={() => removeOrderItem(item.product)} style={styles.removeBtn}>
+                          <Icon name="close-circle-outline" size={22} color={theme.colors.error} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+
+                <Button
                   mode="outlined"
-                  style={{ flex: 1 }}
-                  outlineStyle={{ borderRadius: 18 }}
-                  left={<TextInput.Icon icon="counter" color={theme.colors.primary} />}
-                />
-                <TextInput
-                  label={t('order_detail.total_price')}
-                  value={totalPrice}
-                  onChangeText={setTotalPrice}
-                  keyboardType="numeric"
-                  mode="outlined"
-                  style={{ flex: 1.5 }}
-                  outlineStyle={{ borderRadius: 18 }}
-                  left={<TextInput.Affix text="₹ " />}
-                />
+                  onPress={() => setProductDialogVisible(true)}
+                  icon="plus"
+                  style={styles.addProductBtn}
+                  contentStyle={{ height: 48 }}
+                >
+                  {t('orders.add_order', 'Add Product')}
+                </Button>
               </View>
+
+              <Divider style={{ marginVertical: 8 }} />
+
+              <TextInput
+                label={t('order_detail.total_price')}
+                value={totalPrice}
+                onChangeText={setTotalPrice}
+                keyboardType="numeric"
+                mode="outlined"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Affix text="₹ " />}
+              />
+
+              <TextInput
+                label={t('order_detail.phone') + ' *'}
+                value={phone}
+                onChangeText={setPhone}
+                mode="outlined"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="phone-outline" color={theme.colors.primary} />}
+              />
 
               <TextInput
                 label={t('order_detail.location')}
@@ -302,26 +390,38 @@ export default function OrderDetailScreen() {
               />
             </View>
 
-            {!isNew && customerUser && (
+            {(customerUser || customerName) && (
               <View style={styles.customerCardSection}>
                 <Divider style={styles.cardDivider} />
                 <View style={styles.sectionHeader}>
                   <Icon name="account-details-outline" size={22} color={theme.colors.primary} />
-                  <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>{t('order_detail.customer_details')}</Text>
+                  <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>{t('order_detail.customer_details')}</Text>
+                    {customerUser?.orders_count !== undefined && (
+                      <View style={[styles.orderCountBadgeSmall, { backgroundColor: theme.colors.error + '10', marginBottom: 0 }]}>
+                        <Icon name="shopping-outline" size={14} color={theme.colors.error} />
+                        <Text variant="labelSmall" style={{ color: theme.colors.error, fontWeight: '800', marginLeft: 4 }}>
+                          {customerUser.orders_count} {t('home.orders', 'Orders')}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
                 <View style={[styles.customerInfoBox, { backgroundColor: theme.colors.primary + '08', borderRadius: 18 }]}>
                   <View style={styles.infoRow}>
                     <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.full_name')}</Text>
-                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser.name || '---'}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser?.name || customerName || '---'}</Text>
                   </View>
                   <View style={styles.infoRow}>
                     <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('order_detail.phone')}</Text>
-                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser.phone || '---'}</Text>
+                    <Text variant="bodyLarge" style={{ fontWeight: '700' }}>{customerUser?.phone || phone || '---'}</Text>
                   </View>
-                  <View style={styles.infoRow}>
-                    <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.email')}</Text>
-                    <Text variant="bodyMedium" style={{ fontWeight: '600' }}>{customerUser.email || '---'}</Text>
-                  </View>
+                  {(customerUser?.email || customerEmail) ? (
+                    <View style={styles.infoRow}>
+                      <Text variant="labelMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('auth.email')}</Text>
+                      <Text variant="bodyMedium" style={{ fontWeight: '600' }}>{customerUser?.email || customerEmail}</Text>
+                    </View>
+                  ) : null}
                 </View>
               </View>
             )}
@@ -390,7 +490,7 @@ export default function OrderDetailScreen() {
                     key={p.id}
                     style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
                     onPress={() => {
-                      setProductId(p.id);
+                      addOrderItem(p);
                       setProductDialogVisible(false);
                       setProductSearchQuery('');
                     }}
@@ -406,7 +506,7 @@ export default function OrderDetailScreen() {
         </Dialog>
 
         <Dialog visible={newCustomerModalVisible} onDismiss={() => setNewCustomerModalVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24 }}>
-          <Dialog.Title style={{ color: theme.colors.onSurface }}>Create New Customer</Dialog.Title>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>{t('order_detail.create_new_customer', 'Create New Customer')}</Dialog.Title>
           <Dialog.Content>
             <TextInput
               label={t('order_detail.customer_name', 'Customer Name') + ' *'}
@@ -437,9 +537,9 @@ export default function OrderDetailScreen() {
               left={<TextInput.Icon icon="email-outline" color={theme.colors.primary} />}
             />
           </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setNewCustomerModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>Cancel</Button>
-            <Button onPress={handleCreateCustomer} mode="contained" style={{ borderRadius: 20 }}>Save</Button>
+          <Dialog.Actions style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
+            <Button onPress={() => setNewCustomerModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>{t('common.cancel')}</Button>
+            <Button onPress={handleCreateCustomer} mode="contained" style={{ borderRadius: 20 }}>{t('common.save')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={chatUserDialogVisible} onDismiss={() => setChatUserDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24, maxHeight: '80%' }}>
@@ -560,6 +660,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  itemsSection: {
+    marginBottom: 8,
+  },
+  itemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    padding: 12,
+    borderRadius: 16,
+  },
+  itemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  qtyInput: {
+    width: 60,
+    height: 44,
+    backgroundColor: 'transparent',
+  },
+  removeBtn: {
+    padding: 4,
+  },
+  addProductBtn: {
+    marginTop: 16,
+    borderRadius: 16,
+    borderStyle: 'dashed',
+  },
   rowInputs: {
     flexDirection: 'row',
     gap: 16,
@@ -614,6 +742,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  orderCountBadgeSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   actions: {
     marginTop: 32,

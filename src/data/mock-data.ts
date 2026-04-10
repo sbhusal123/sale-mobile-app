@@ -21,15 +21,21 @@ export type Product = {
 };
 
 export type Customer = {
-  id: number;
+  id: string;
   name: string;
   email: string;
   phone: string;
 };
 
+export type OrderItem = {
+  product: number;
+  quantity: number;
+  price: string;
+};
+
 export type Order = {
   id: number;
-  quantity: number;
+  items: OrderItem[];
   total_price: string;
   created_at: string;
   location: string;
@@ -39,7 +45,6 @@ export type Order = {
   user: number;
   chat_user?: Customer | null;
   chat_session: string;
-  product: number;
 };
 
 export type User = {

@@ -90,7 +90,7 @@ android {
     splits {
         abi {
             reset()
-            enable true
+            enable !gradle.startParameter.taskNames.any { it.contains("Debug") }
             universalApk true  // If true, also generate a universal APK
             include "armeabi-v7a", "arm64-v8a"
         }
@@ -111,9 +111,10 @@ android {
             // Caution! In production, you need to generate your own keystore file.
             // see https://reactnative.dev/docs/signed-apk-android.
             signingConfig signingConfigs.debug
-            minifyEnabled enableProguardInReleaseBuilds
+            minifyEnabled true
             shrinkResources true
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+            manifestPlaceholders = [usesCleartextTraffic: "true"]
         }
     }
 

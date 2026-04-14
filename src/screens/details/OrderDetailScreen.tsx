@@ -20,7 +20,7 @@ export default function OrderDetailScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const { orders, products, addOrder, editOrder, deleteOrder, user: merchantUser } = useAuth();
+  const { orders, products, addOrder, editOrder, deleteOrder, user: merchantUser, fetchProducts } = useAuth();
 
   const isNew = id === 'new';
   const existingOrder = !isNew ? orders.find(o => o.id === Number(id)) : null;
@@ -45,6 +45,10 @@ export default function OrderDetailScreen() {
   const [chatUserDialogVisible, setChatUserDialogVisible] = useState(false);
   const [chatUserSearchQuery, setChatUserSearchQuery] = useState('');
   const [newCustomerModalVisible, setNewCustomerModalVisible] = useState(false);
+  const [newProductModalVisible, setNewProductModalVisible] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductPrice, setNewProductPrice] = useState('');
+  const [newProductQuantity, setNewProductQuantity] = useState('1');
 
   const [customerName, setCustomerName] = useState(existingOrder?.chat_user?.name || (existingOrder as any)?.user?.name || '');
   const [customerEmail, setCustomerEmail] = useState(existingOrder?.chat_user?.email || (existingOrder as any)?.user?.email || '');
@@ -195,6 +199,41 @@ export default function OrderDetailScreen() {
       console.error('Create customer error:', error);
       Alert.alert(t('common.error'), 'Failed to create customer');
     } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCreateProduct = async () => {
+    if (!newProductName || !newProductPrice) {
+      Alert.alert(t('common.error'), 'Product Name and Price are required');
+      return;
+    }
+
+    setLoadingMessage('Creating product...');
+    setIsSaving(true);
+
+    try {
+      const payload = {
+        name: newProductName,
+        price: parseFloat(newProductPrice),
+        quantity: parseInt(newProductQuantity, 10) || 0,
+        instock: true,
+      };
+      const response = await apiClient.post('products/', payload);
+      const newProd = response.data;
+      
+      addOrderItem(newProd);
+      setNewProductModalVisible(false);
+      setNewProductName('');
+      setNewProductPrice('');
+      setNewProductQuantity('1');
+    } catch (error) {
+      console.error('Create product error:', error);
+      Alert.alert(t('common.error'), 'Failed to create product');
+    } finally {
+      setIsSaving(true); 
+      // Refresh products list
+      await fetchProducts();
       setIsSaving(false);
     }
   };
@@ -483,6 +522,15 @@ export default function OrderDetailScreen() {
               left={<TextInput.Icon icon="magnify" color={theme.colors.primary} />}
             />
             <ScrollView style={{ maxHeight: 400 }}>
+              <TouchableOpacity
+                style={{ paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: theme.colors.outline + '40' }}
+                onPress={() => {
+                  setProductDialogVisible(false);
+                  setNewProductModalVisible(true);
+                }}
+              >
+                <Text style={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 16 }}>+ {t('product_detail.add_title', 'Create New Product')}</Text>
+              </TouchableOpacity>
               {products
                 .filter(p => (p.name || '').toLowerCase().includes(productSearchQuery.toLowerCase()))
                 .map((p) => (
@@ -540,6 +588,43 @@ export default function OrderDetailScreen() {
           <Dialog.Actions style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
             <Button onPress={() => setNewCustomerModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>{t('common.cancel')}</Button>
             <Button onPress={handleCreateCustomer} mode="contained" style={{ borderRadius: 20 }}>{t('common.save')}</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={newProductModalVisible} onDismiss={() => setNewProductModalVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24 }}>
+          <Dialog.Title style={{ color: theme.colors.onSurface }}>{t('product_detail.add_title', 'Create New Product')}</Dialog.Title>
+          <Dialog.Content>
+            <TextInput
+              label={t('product_detail.name', 'Product Name') + ' *'}
+              value={newProductName}
+              onChangeText={setNewProductName}
+              mode="outlined"
+              style={[styles.input, { marginBottom: 12 }]}
+              outlineStyle={{ borderRadius: 18 }}
+            />
+            <TextInput
+              label={t('product_detail.price', 'Price') + ' *'}
+              value={newProductPrice}
+              onChangeText={setNewProductPrice}
+              mode="outlined"
+              keyboardType="numeric"
+              style={[styles.input, { marginBottom: 12 }]}
+              outlineStyle={{ borderRadius: 18 }}
+              left={<TextInput.Affix text="₹ " />}
+            />
+            <TextInput
+              label={t('product_detail.quantity', 'Quantity')}
+              value={newProductQuantity}
+              onChangeText={setNewProductQuantity}
+              mode="outlined"
+              keyboardType="numeric"
+              style={styles.input}
+              outlineStyle={{ borderRadius: 18 }}
+            />
+          </Dialog.Content>
+          <Dialog.Actions style={{ paddingHorizontal: 24, paddingBottom: 16 }}>
+            <Button onPress={() => setNewProductModalVisible(false)} textColor={theme.colors.onSurfaceVariant}>{t('common.cancel')}</Button>
+            <Button onPress={handleCreateProduct} mode="contained" style={{ borderRadius: 20 }}>{t('common.save')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={chatUserDialogVisible} onDismiss={() => setChatUserDialogVisible(false)} style={{ backgroundColor: theme.colors.surface, borderRadius: 24, maxHeight: '80%' }}>

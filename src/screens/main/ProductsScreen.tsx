@@ -173,6 +173,7 @@ export default function ProductsScreen() {
         title={t('products.title')} 
         onMenu={() => navigation.openDrawer()} 
         icon="package-variant-closed"
+        onAdd={() => navigation.navigate('ProductDetail', { id: 'new', categoryId: selectedCategoryId })}
       />
 
       <View style={styles.headerControls}>

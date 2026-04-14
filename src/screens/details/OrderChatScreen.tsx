@@ -282,13 +282,13 @@ export default function OrderChatScreen() {
             style={[
               styles.bubble,
               {
-                backgroundColor: isUser ? theme.colors.primary : theme.colors.surfaceVariant,
+                backgroundColor: isUser ? theme.colors.primary : theme.colors.secondaryContainer,
                 borderBottomRightRadius: isUser ? 4 : 20,
                 borderBottomLeftRadius: isUser ? 20 : 4,
               },
             ]}
           >
-            <Text style={[styles.messageText, { color: isUser ? '#FFFFFF' : theme.colors.onSurfaceVariant }]}>
+            <Text style={[styles.messageText, { color: isUser ? '#FFFFFF' : theme.colors.onSecondaryContainer }]}>
               {item.text}
             </Text>
           </Surface>

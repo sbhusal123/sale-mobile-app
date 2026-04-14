@@ -12,7 +12,8 @@
     "add": "Add",
     "delete": "Delete",
     "deleting": "Deleting...",
-    "back": "Back"
+    "back": "Back",
+    "view_all": "View All"
   },
   "auth": {
     "welcome_back": "Welcome Back",
@@ -53,7 +54,8 @@
     "view_orders": "View order history.",
     "inquiry_chat": "Inquiry chats.",
     "customers": "Customers",
-    "manage_customers": "Manage your customer base."
+    "manage_customers": "Manage your customer base.",
+    "top_categories": "Featured Categories"
   },
   "products": {
     "title": "Products",
@@ -131,7 +133,10 @@
     "name": "Category Name",
     "description": "Description",
     "delete_confirm": "Delete Category?",
-    "saved_success": "Category saved successfully"
+    "saved_success": "Category saved successfully",
+    "show_on_home": "Show on Home Page",
+    "show_on_home_desc": "Display this category as a section on the home page",
+    "display_order": "Display Order"
   },
   "order_detail": {
     "title": "Order Details",

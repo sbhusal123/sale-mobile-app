@@ -13,9 +13,11 @@ interface AppHeaderProps {
   onBack?: () => void;
   onMenu?: () => void;
   icon?: string;
+  onAdd?: () => void;
+  addIcon?: string;
 }
 
-const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu, icon }) => {
+const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu, icon, onAdd, addIcon }) => {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -42,10 +44,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({ title, showBack, onBack, onMenu, 
         <Text variant="titleMedium" style={[styles.title, { color: theme.colors.onSurface }]} numberOfLines={1}>
           {title}
         </Text>
+      </View>
 
-        <View style={styles.controlsGroup}>
-          <HeaderControls />
-        </View>
+      <View style={styles.rightSection}>
+        {onAdd && (
+          <IconButton
+            icon={addIcon || 'plus'}
+            size={24}
+            iconColor={theme.colors.primary}
+            onPress={onAdd}
+            style={styles.actionBtn}
+          />
+        )}
+        <HeaderControls />
       </View>
     </View>
   );
@@ -65,10 +76,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   controlsGroup: {
     marginRight: 8,
   },
   iconBtn: {
+    margin: 0,
+  },
+  actionBtn: {
     margin: 0,
   },
   title: {

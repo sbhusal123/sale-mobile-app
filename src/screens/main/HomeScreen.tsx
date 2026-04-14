@@ -1,19 +1,20 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Image, RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppHeader from '../../components/AppHeader';
 import ShimmerPlaceholder from '../../components/ShimmerPlaceholder';
 import { useAuth } from '../../context/auth-context';
+import { getImageUri } from '../../utils/url';
 
 const Icon = MaterialCommunityIcons as any;
 
 export default function HomeScreen() {
   const { t } = useTranslation();
-  const { user, orders, chatUsers, fetchCategories, fetchProducts, fetchOrders, fetchChatUsers, fetchConfig, fetchTodayStats, todayStats } = useAuth();
+  const { user, orders, categories, chatUsers, fetchCategories, fetchProducts, fetchOrders, fetchChatUsers, fetchConfig, fetchTodayStats, todayStats } = useAuth();
 
   const theme = useTheme();
   const navigation = useNavigation<any>();
@@ -185,6 +186,73 @@ export default function HomeScreen() {
               <View style={{ flex: 1 }} />
             </View>
 
+            {categories
+              .filter(c => c.show_on_home)
+              .sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
+              .map((cat) => (
+                <View key={cat.id} style={{ marginBottom: 24 }}>
+                  <View style={styles.sectionHeader}>
+                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '900' }}>
+                      {cat.title}
+                    </Text>
+                    <TouchableOpacity onPress={() => navigation.navigate('Products', { categoryId: cat.id })}>
+                      <Text variant="labelLarge" style={{ color: theme.colors.primary, fontWeight: '700' }}>
+                        {t('common.view_all') || 'View All'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoryScroll}
+                  >
+                    {(cat.items || []).map((product) => (
+                      <Surface
+                        key={product.id}
+                        elevation={2}
+                        style={[styles.productCard, { backgroundColor: theme.colors.surface }]}
+                      >
+                        <TouchableRipple
+                          onPress={() => navigation.navigate('ProductDetail', { id: product.id })}
+                          style={{ flex: 1 }}
+                          rippleColor={theme.colors.primary + '1A'}
+                        >
+                          <View style={styles.productCardInner}>
+                            <View style={styles.productImageContainer}>
+                              {product.image ? (
+                                <Image 
+                                  source={{ uri: getImageUri(product.image) || '' }} 
+                                  style={styles.productImage} 
+                                  resizeMode="cover" 
+                                />
+                              ) : (
+                                <View style={[styles.productImage, { backgroundColor: theme.colors.surfaceVariant, justifyContent: 'center', alignItems: 'center' }]}>
+                                  <Icon name="package-variant" size={24} color={theme.colors.primary} />
+                                </View>
+                              )}
+                            </View>
+                            <View style={styles.productInfo}>
+                              <Text variant="labelMedium" numberOfLines={1} style={[styles.productName, { color: theme.colors.onSurface }]}>
+                                {product.name}
+                              </Text>
+                              <Text variant="titleSmall" style={{ color: theme.colors.primary, fontWeight: '900' }}>
+                                ₹{parseFloat(product.price).toLocaleString()}
+                              </Text>
+                            </View>
+                          </View>
+                        </TouchableRipple>
+                      </Surface>
+                    ))}
+                    {(cat.items || []).length === 0 && (
+                      <View style={[styles.productCard, { justifyContent: 'center', alignItems: 'center', opacity: 0.5 }]}>
+                         <Text variant="bodySmall">{t('products.no_products') || 'No items available'}</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              ))}
+
             <View style={styles.sectionHeader}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: '900' }}>
                 {t('home.quick_menu')}
@@ -346,5 +414,39 @@ const styles = StyleSheet.create({
     lineHeight: 16,
     fontWeight: '500',
     opacity: 0.8,
+  },
+  categoryScroll: {
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+    gap: 12,
+  },
+  productCard: {
+    width: 160,
+    borderRadius: 24,
+    overflow: 'hidden',
+    marginRight: 12,
+  },
+  productCardInner: {
+    padding: 8,
+  },
+  productImageContainer: {
+    width: '100%',
+    height: 120,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#f5f5f5',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+  },
+  productInfo: {
+    padding: 8,
+    gap: 4,
+  },
+  productName: {
+    fontWeight: '800',
+    fontSize: 14,
+    letterSpacing: -0.3,
   },
 });

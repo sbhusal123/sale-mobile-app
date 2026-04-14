@@ -166,6 +166,8 @@ export default function ChatUsersScreen() {
         title={t('navigation.chat_users', 'Customers')}
         onMenu={() => navigation.openDrawer()}
         icon="account-group"
+        onAdd={() => setCreateModalVisible(true)}
+        addIcon="account-plus"
       />
 
       <View style={styles.headerControls}>

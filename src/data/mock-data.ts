@@ -2,6 +2,9 @@ export type Category = {
   id: number;
   title: string;
   description: string;
+  show_on_home?: boolean;
+  display_order?: number;
+  items?: Product[];
 };
 
 export type Product = {

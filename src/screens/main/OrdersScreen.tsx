@@ -201,6 +201,7 @@ export default function OrdersScreen() {
         title={t('orders.title')}
         onMenu={() => navigation.openDrawer()}
         icon="cart"
+        onAdd={() => navigation.navigate('OrderDetail', { id: 'new' })}
       />
 
       {isLoading ? renderShimmer() : (

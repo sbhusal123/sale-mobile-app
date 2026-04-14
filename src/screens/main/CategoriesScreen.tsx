@@ -70,6 +70,7 @@ export default function CategoriesScreen() {
         title={t('categories.title')}
         onMenu={() => navigation.openDrawer()}
         icon="view-grid"
+        onAdd={() => navigation.navigate('CategoryDetail', { id: 'new' })}
       />
 
       <View style={styles.headerControls}>

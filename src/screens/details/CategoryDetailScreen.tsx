@@ -1,7 +1,7 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Surface, Text, TextInput, useTheme } from 'react-native-paper';
+import { Button, Surface, Switch, Text, TextInput, useTheme } from 'react-native-paper';
 import AppHeader from '../../components/AppHeader';
 import LoadingOverlay from '../../components/LoadingOverlay';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,6 +26,8 @@ export default function CategoryDetailScreen() {
 
   const [title, setTitle] = useState(existingCategory?.title || '');
   const [description, setDescription] = useState(existingCategory?.description || '');
+  const [showOnHome, setShowOnHome] = useState((existingCategory as any)?.show_on_home || false);
+  const [displayOrder, setDisplayOrder] = useState(String((existingCategory as any)?.display_order || '0'));
   const [isSaving, setIsSaving] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(t('common.saving') || 'Saving...');
 
@@ -44,6 +46,8 @@ export default function CategoryDetailScreen() {
     const categoryData = {
       title,
       description,
+      show_on_home: showOnHome,
+      display_order: parseInt(displayOrder, 10) || 0,
     };
 
     setLoadingMessage(t('common.saving') || 'Saving...');
@@ -128,6 +132,29 @@ export default function CategoryDetailScreen() {
                 outlineStyle={{ borderRadius: 18 }}
                 left={<TextInput.Icon icon="text-subject" color={theme.colors.primary} />}
               />
+
+              <View style={styles.switchRow}>
+                <View style={{ flex: 1 }}>
+                  <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('category_detail.show_on_home', 'Show on Home Page')}</Text>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('category_detail.show_on_home_desc', 'Display this category as a section on the home page')}</Text>
+                </View>
+                <Switch
+                  value={showOnHome}
+                  onValueChange={setShowOnHome}
+                  color={theme.colors.primary}
+                />
+              </View>
+
+              <TextInput
+                label={t('category_detail.display_order', 'Display Order')}
+                value={displayOrder}
+                onChangeText={setDisplayOrder}
+                mode="outlined"
+                keyboardType="numeric"
+                style={styles.input}
+                outlineStyle={{ borderRadius: 18 }}
+                left={<TextInput.Icon icon="sort-numeric-ascending" color={theme.colors.primary} />}
+              />
             </View>
 
             <View style={styles.actions}>
@@ -191,6 +218,12 @@ const styles = StyleSheet.create({
   },
   inputGap: {
     gap: 16,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    gap: 12,
   },
   input: {
     backgroundColor: 'transparent',
